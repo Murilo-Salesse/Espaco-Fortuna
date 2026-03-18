@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface Configuracao {
   nome: string
@@ -25,7 +25,6 @@ interface DiaStatus {
   motivo: string
 }
 
-
 const PLACEHOLDER_FOTOS = [
   { label: 'Área da piscina',  bg: 'linear-gradient(135deg,#064e3b,#1D9E75)' },
   { label: 'Churrasqueira',    bg: 'linear-gradient(135deg,#7c3f00,#d97706)' },
@@ -34,7 +33,6 @@ const PLACEHOLDER_FOTOS = [
   { label: 'Quarto principal', bg: 'linear-gradient(135deg,#7f1d1d,#dc2626)' },
   { label: 'Área externa',     bg: 'linear-gradient(135deg,#064e3b,#059669)' },
 ]
-
 function agruparEmSlides<T>(fotos: T[]): T[][] {
   const slides: T[][] = []
   for (let i = 0; i < fotos.length; i += 3) {
@@ -91,9 +89,7 @@ export default function HomePage() {
 
   const [lbIdx, setLbIdx]       = useState<number | null>(null)
   const [lbVisible, setLbVisible] = useState(false)
-
   const [carIdx, setCarIdx] = useState(0)
-  const carouselRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch('/api/configuracao').then(r => r.json()).then(d => setConfig(d.configuracao))
@@ -113,10 +109,17 @@ export default function HomePage() {
   const fotosReais: string[] = config?.fotos?.length ? config.fotos.slice(0, 30) : []
   const usandoPlaceholder = fotosReais.length === 0
 
-  const slidesReais = agruparEmSlides(fotosReais)
-  const slidesPlaceholder = agruparEmSlides(PLACEHOLDER_FOTOS)
+  type FotoNorm = { url?: string; bg?: string; label: string }
+  const fotosNorm: FotoNorm[] = usandoPlaceholder
+    ? PLACEHOLDER_FOTOS.map(f => ({ bg: f.bg, label: f.label }))
+    : fotosReais.map((url, i) => ({ url, label: `Foto ${i + 1}` }))
 
-  const totalSlides = usandoPlaceholder ? slidesPlaceholder.length : slidesReais.length
+  const FOTOS_POR_SLIDE = 4
+  const slidesAgrupados: FotoNorm[][] = []
+  for (let i = 0; i < fotosNorm.length; i += FOTOS_POR_SLIDE) {
+    slidesAgrupados.push(fotosNorm.slice(i, i + FOTOS_POR_SLIDE))
+  }
+  const totalSlides = slidesAgrupados.length
 
   function openLightbox(idx: number) {
     setLbIdx(idx)
@@ -129,13 +132,11 @@ export default function HomePage() {
   }
 
   function lbPrev() {
-    const total = usandoPlaceholder ? PLACEHOLDER_FOTOS.length : fotosReais.length
-    setLbIdx(i => ((i! - 1 + total) % total))
+    setLbIdx(i => ((i! - 1 + fotosNorm.length) % fotosNorm.length))
   }
 
   function lbNext() {
-    const total = usandoPlaceholder ? PLACEHOLDER_FOTOS.length : fotosReais.length
-    setLbIdx(i => (i! + 1) % (usandoPlaceholder ? PLACEHOLDER_FOTOS.length : fotosReais.length))
+    setLbIdx(i => (i! + 1) % fotosNorm.length)
   }
 
   useEffect(() => {
@@ -150,18 +151,11 @@ export default function HomePage() {
   }, [lbIdx])
 
   function carMove(dir: number) {
-    const next = (carIdx + dir + totalSlides) % totalSlides
-    setCarIdx(next)
-    if (carouselRef.current) {
-      carouselRef.current.style.transform = `translateX(-${next * 100}%)`
-    }
+    setCarIdx(prev => (prev + dir + totalSlides) % totalSlides)
   }
 
   function goToSlide(i: number) {
     setCarIdx(i)
-    if (carouselRef.current) {
-      carouselRef.current.style.transform = `translateX(-${i * 100}%)`
-    }
   }
 
   function getDiasDoMes() {
@@ -289,95 +283,13 @@ export default function HomePage() {
 
   const resumo = getResumo()
   const dias   = getDiasDoMes()
-  function renderSlide(slideIdx: number) {
-    if (usandoPlaceholder) {
-      const slide = slidesPlaceholder[slideIdx]
-      const [f0, f1, f2] = slide
-      const base = slideIdx * 3
-      return renderSlideLayout(slideIdx, base,
-        f0 ? { bg: f0.bg, label: f0.label, url: undefined } : undefined,
-        f1 ? { bg: f1.bg, label: f1.label, url: undefined } : undefined,
-        f2 ? { bg: f2.bg, label: f2.label, url: undefined } : undefined,
-      )
-    } else {
-      const slide = slidesReais[slideIdx]
-      const [u0, u1, u2] = slide
-      const base = slideIdx * 3
-      return renderSlideLayout(slideIdx, base,
-        u0 ? { bg: undefined, label: `Foto ${base + 1}`,     url: u0 } : undefined,
-        u1 ? { bg: undefined, label: `Foto ${base + 2}`,     url: u1 } : undefined,
-        u2 ? { bg: undefined, label: `Foto ${base + 3}`,     url: u2 } : undefined,
-      )
-    }
+
+  const totalFotos = fotosNorm.length
+  function fotoStyle(f: FotoNorm): React.CSSProperties {
+    return f.url
+      ? { backgroundImage: `url(${f.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+      : { background: f.bg ?? '#1c1917' }
   }
-
-  type FotoSlot = { bg?: string; label: string; url?: string }
-
-  function renderSlideLayout(
-    slideIdx: number,
-    baseIdx: number,
-    f0?: FotoSlot,
-    f1?: FotoSlot,
-    f2?: FotoSlot,
-  ) {
-    const fotoStyle = (f?: FotoSlot): React.CSSProperties =>
-      f?.url
-        ? { backgroundImage: `url(${f.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-        : { background: f?.bg ?? '#1c1917' }
-
-    return (
-      <div
-        key={slideIdx}
-        className="px-6"
-        style={{ width: `${100 / totalSlides}%`, flexShrink: 0 }}
-      >
-        <div className="grid grid-cols-12 gap-3 h-80">
-          <div
-            className="col-span-7 rounded-t-2xl overflow-hidden cursor-pointer group relative"
-            onClick={() => f0 && openLightbox(baseIdx)}
-            style={fotoStyle(f0)}
-          >
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
-              <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
-                <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-              </div>
-            </div>
-            {f0 && (
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                <span className="text-white text-sm font-medium">{f0.label}</span>
-                <span className="block text-white/60 text-xs mt-0.5">Clique para ampliar</span>
-              </div>
-            )}
-          </div>
-          <div className="col-span-5 flex flex-col gap-3">
-            {([f1, f2] as (FotoSlot | undefined)[]).map((f, i) =>
-              f ? (
-                <div
-                  key={i}
-                  className="flex-1 overflow-hidden cursor-pointer group relative rounded-t-2xl"
-                  onClick={() => openLightbox(baseIdx + i + 1)}
-                  style={fotoStyle(f)}
-                >
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
-                    <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                      <svg width="13" height="13" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                    </div>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                    <span className="text-white text-xs font-medium">{f.label}</span>
-                  </div>
-                </div>
-              ) : (
-                <div key={i} className="flex-1 rounded-t-2xl bg-white/5" />
-              )
-            )}
-          </div>
-
-        </div>
-      </div>
-    )
-  }
-  const totalFotos = usandoPlaceholder ? PLACEHOLDER_FOTOS.length : fotosReais.length
 
   return (
     <div className="font-sans text-stone-800 min-h-screen bg-stone-100">
@@ -398,15 +310,14 @@ export default function HomePage() {
       </header>
 
       <main className="pt-14">
-
         <section className="hero-gradient relative overflow-hidden">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1' fill='white'/%3E%3C/svg%3E\")", backgroundSize: '40px 40px' }} />
-          <div className="max-w-5xl mx-auto px-6 pt-16 pb-0">
-            <div className="max-w-xl mb-10">
+          <div className="max-w-7xl mx-auto px-8 pt-16 pb-0">
+            <div className="max-w-2xl mb-12">
               <span className="inline-block text-green-200 text-xs font-medium tracking-widest uppercase mb-4">
                 Locação exclusiva · {config?.localizacao ?? 'Salto, SP'}
               </span>
-              <h1 className="font-serif text-4xl md:text-5xl text-white leading-tight mb-4">
+              <h1 className="font-serif text-5xl md:text-6xl text-white leading-tight mb-5">
                 Seu evento,<br />
                 <em className="not-italic text-green-400">espaço completo.</em>
               </h1>
@@ -418,41 +329,87 @@ export default function HomePage() {
               </a>
             </div>
             {totalSlides > 0 && (
-              <div className="relative -mx-6 overflow-hidden">
-                <div
-                  ref={carouselRef}
-                  style={{
-                    display:   'flex',
-                    width:     `${totalSlides * 100}%`,
-                    transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)',
-                  }}
-                >
-                  {Array.from({ length: totalSlides }, (_, i) => renderSlide(i))}
-                </div>
+              <div className="relative -mx-8 overflow-hidden" style={{ height: '400px' }}>
+
+                {slidesAgrupados.map((slide, sIdx) => {
+                  const [f0, f1, f2, f3] = slide
+                  const offset = sIdx - carIdx 
+                  return (
+                    <div
+                      key={sIdx}
+                      className="absolute inset-0 px-8 flex gap-3"
+                      style={{
+                        transform:  `translateX(${offset * 100}%)`,
+                        transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)',
+                      }}
+                    >
+                      {f0 && (
+                        <div
+                          className="rounded-t-2xl overflow-hidden cursor-pointer group relative flex-shrink-0"
+                          style={{ width: '55%', ...fotoStyle(f0) }}
+                          onClick={() => openLightbox(sIdx * FOTOS_POR_SLIDE)}
+                        >
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
+                              <svg width="18" height="18" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                            </div>
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/70 to-transparent">
+                            <span className="text-white text-base font-medium">{f0.label}</span>
+                            <span className="block text-white/60 text-xs mt-0.5">Clique para ampliar</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-3 flex-1">
+                        {[f1, f2, f3].map((f, i) =>
+                          f ? (
+                            <div
+                              key={i}
+                              className="flex-1 rounded-t-2xl overflow-hidden cursor-pointer group relative"
+                              style={fotoStyle(f)}
+                              onClick={() => openLightbox(sIdx * FOTOS_POR_SLIDE + i + 1)}
+                            >
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
+                                <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                  <svg width="13" height="13" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                                </div>
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                                <span className="text-white text-xs font-medium">{f.label}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div key={i} className="flex-1 rounded-t-2xl bg-white/5" />
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
 
                 {totalSlides > 1 && (
                   <>
-                    <button onClick={() => carMove(-1)} className="absolute left-8 top-1/2 -translate-y-6 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-sm z-10">‹</button>
-                    <button onClick={() => carMove(1)}  className="absolute right-8 top-1/2 -translate-y-6 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-sm z-10">›</button>
+                    <button onClick={() => carMove(-1)} className="absolute left-10 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-lg z-10">‹</button>
+                    <button onClick={() => carMove(1)}  className="absolute right-10 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-lg z-10">›</button>
                   </>
                 )}
 
-                {/* Dots */}
                 {totalSlides > 1 && (
-                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                    {Array.from({ length: totalSlides }, (_, i) => (
+                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                    {slidesAgrupados.map((_, i) => (
                       <button
                         key={i}
                         onClick={() => goToSlide(i)}
                         className="h-1.5 rounded-full bg-white transition-all duration-300"
-                        style={{ width: i === carIdx ? '20px' : '6px', opacity: i === carIdx ? 1 : 0.4 }}
+                        style={{ width: i === carIdx ? '24px' : '6px', opacity: i === carIdx ? 1 : 0.35 }}
                       />
                     ))}
                   </div>
                 )}
 
                 {totalSlides > 1 && (
-                  <div className="absolute top-4 right-10 bg-black/30 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full border border-white/20 z-10">
+                  <div className="absolute top-4 right-12 bg-black/30 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full border border-white/20 z-10">
                     {carIdx + 1} / {totalSlides}
                   </div>
                 )}
@@ -493,7 +450,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
         <section id="calendario" className="max-w-3xl mx-auto px-4 py-14">
           <div className="flex flex-col gap-6">
 
@@ -583,7 +539,6 @@ export default function HomePage() {
             )}
           </div>
         </section>
-
         <section id="reservar" className="bg-white border-t border-stone-200">
           <div className="max-w-5xl mx-auto px-6 py-14">
             <div className="max-w-lg">
@@ -647,6 +602,7 @@ export default function HomePage() {
           </div>
         </footer>
       </main>
+
       {lbIdx !== null && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
@@ -672,21 +628,18 @@ export default function HomePage() {
               opacity:   lbVisible ? 1 : 0,
               transform: lbVisible ? 'scale(1)' : 'scale(0.95)',
               transition: 'opacity 0.25s ease, transform 0.25s ease',
-              ...(usandoPlaceholder
-                ? { background: PLACEHOLDER_FOTOS[lbIdx]?.bg ?? '#064e3b' }
-                : { backgroundImage: `url(${fotosReais[lbIdx]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-              ),
+              ...fotoStyle(fotosNorm[lbIdx] ?? fotosNorm[0]),
             }}
           >
-            {usandoPlaceholder && (
+            {!fotosNorm[lbIdx]?.url && (
               <div className="text-center">
-                <div className="text-white/70 text-base font-medium">{PLACEHOLDER_FOTOS[lbIdx]?.label}</div>
+                <div className="text-white/70 text-base font-medium">{fotosNorm[lbIdx]?.label}</div>
                 <div className="text-white/30 text-xs mt-1">Foto {lbIdx + 1} de {totalFotos}</div>
               </div>
             )}
             <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/60 to-transparent">
               <span className="text-white text-sm font-medium">
-                {usandoPlaceholder ? PLACEHOLDER_FOTOS[lbIdx]?.label : `Foto ${lbIdx + 1}`}
+                {fotosNorm[lbIdx]?.label ?? `Foto ${lbIdx + 1}`}
               </span>
             </div>
           </div>
