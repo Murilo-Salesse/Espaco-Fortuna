@@ -8,7 +8,9 @@ import Link from 'next/link'
 
 export default function LoginPage() {
   const searchParams = useSearchParams()
-  const redirect     = searchParams.get('redirect') ?? '/admin'
+  const redirect = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('redirect') ?? '/admin'
+    : '/admin'
 
   const [email, setEmail]   = useState('')
   const [senha, setSenha]   = useState('')
