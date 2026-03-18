@@ -25,6 +25,11 @@ interface DiaStatus {
   motivo: string
 }
 
+interface SlidePhoto {
+  label: string
+  bg: string
+}
+
 function hoje(): string {
   return new Date().toISOString().split('T')[0]
 }
@@ -41,6 +46,47 @@ function dateParaIso(d: Date): string {
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const FERIADOS_BR = ['01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25']
+
+const TODAS_FOTOS: SlidePhoto[] = [
+  { label: 'Área da piscina',    bg: 'linear-gradient(135deg,#064e3b,#1D9E75)' },
+  { label: 'Churrasqueira',      bg: 'linear-gradient(135deg,#7c3f00,#d97706)' },
+  { label: 'Área de lazer',      bg: 'linear-gradient(135deg,#1e3a5f,#3b82f6)' },
+  { label: 'Sala principal',     bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)' },
+  { label: 'Quarto principal',   bg: 'linear-gradient(135deg,#7f1d1d,#dc2626)' },
+  { label: 'Área externa',       bg: 'linear-gradient(135deg,#064e3b,#059669)' },
+  { label: 'Cozinha',            bg: 'linear-gradient(135deg,#1c1917,#78716c)' },
+  { label: 'Sala de jantar',     bg: 'linear-gradient(135deg,#0c4a6e,#0ea5e9)' },
+  { label: 'Banheiro suite',     bg: 'linear-gradient(135deg,#4a044e,#c026d3)' },
+  { label: 'Varanda',            bg: 'linear-gradient(135deg,#365314,#84cc16)' },
+  { label: 'Área kids',          bg: 'linear-gradient(135deg,#7c2d12,#fb923c)' },
+  { label: 'Piscina noturna',    bg: 'linear-gradient(135deg,#0f172a,#334155)' },
+  { label: 'Jardim',             bg: 'linear-gradient(135deg,#14532d,#4ade80)' },
+  { label: 'Quarto 2',           bg: 'linear-gradient(135deg,#450a0a,#ef4444)' },
+  { label: 'Sala de jogos',      bg: 'linear-gradient(135deg,#1e1b4b,#6366f1)' },
+  { label: 'Espaço gourmet',     bg: 'linear-gradient(135deg,#451a03,#f59e0b)' },
+  { label: 'Academia',           bg: 'linear-gradient(135deg,#0f172a,#475569)' },
+  { label: 'Entrada',            bg: 'linear-gradient(135deg,#042f2e,#2dd4bf)' },
+  { label: 'Terraço',            bg: 'linear-gradient(135deg,#3b0764,#a855f7)' },
+  { label: 'Área gourmet',       bg: 'linear-gradient(135deg,#7c3f00,#b45309)' },
+  { label: 'Deck',               bg: 'linear-gradient(135deg,#052e16,#22c55e)' },
+  { label: 'Garagem',            bg: 'linear-gradient(135deg,#111827,#374151)' },
+  { label: 'Corredor',           bg: 'linear-gradient(135deg,#1e3a5f,#60a5fa)' },
+  { label: 'Quarto 3',           bg: 'linear-gradient(135deg,#500724,#f43f5e)' },
+  { label: 'Sauna',              bg: 'linear-gradient(135deg,#431407,#ea580c)' },
+  { label: 'Banheiro externo',   bg: 'linear-gradient(135deg,#0c4a6e,#38bdf8)' },
+  { label: 'Área de serviço',    bg: 'linear-gradient(135deg,#1c1917,#a8a29e)' },
+  { label: 'Vista frontal',      bg: 'linear-gradient(135deg,#065f46,#34d399)' },
+  { label: 'Pôr do sol',         bg: 'linear-gradient(135deg,#7c2d12,#f97316)' },
+  { label: 'Noite iluminada',    bg: 'linear-gradient(135deg,#020617,#1e40af)' },
+]
+
+function agruparEmSlides(fotos: SlidePhoto[]): SlidePhoto[][] {
+  const slides: SlidePhoto[][] = []
+  for (let i = 0; i < fotos.length; i += 3) {
+    slides.push(fotos.slice(i, i + 3))
+  }
+  return slides
+}
 
 function tipoDia(date: Date, precos: Preco[]): Preco {
   const diaSemana = date.getDay()
@@ -70,9 +116,13 @@ export default function HomePage() {
 
   const [enviando, setEnviando] = useState(false)
   const [toast, setToast]       = useState<string | null>(null)
-  const [lbIdx, setLbIdx]       = useState<number | null>(null)
-  const [carIdx, setCarIdx]     = useState(0)
 
+  const [lbIdx, setLbIdx] = useState<number | null>(null)
+  const [lbVisible, setLbVisible] = useState(false)
+
+  const [carIdx, setCarIdx] = useState(0)
+  const slides = agruparEmSlides(TODAS_FOTOS)
+  const totalSlides = slides.length
   const carouselRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -90,9 +140,39 @@ export default function HomePage() {
       })
   }, [mesSelecionado])
 
+  function openLightbox(idx: number) {
+    setLbIdx(idx)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setLbVisible(true))
+    })
+  }
+
+  function closeLightbox() {
+    setLbVisible(false)
+    setTimeout(() => setLbIdx(null), 250)
+  }
+
+  function lbPrev() {
+    setLbIdx(i => ((i! - 1 + TODAS_FOTOS.length) % TODAS_FOTOS.length))
+  }
+
+  function lbNext() {
+    setLbIdx(i => (i! + 1) % TODAS_FOTOS.length)
+  }
+
+  useEffect(() => {
+    if (lbIdx === null) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowLeft')  lbPrev()
+      if (e.key === 'ArrowRight') lbNext()
+      if (e.key === 'Escape')     closeLightbox()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lbIdx])
+
   function carMove(dir: number) {
-    const total = 2
-    const next = (carIdx + dir + total) % total
+    const next = (carIdx + dir + totalSlides) % totalSlides
     setCarIdx(next)
     if (carouselRef.current) {
       carouselRef.current.style.transform = `translateX(-${next * 100}%)`
@@ -159,13 +239,12 @@ export default function HomePage() {
 
   function getDiaClasse(date: Date): string {
     const iso = dateParaIso(date)
-    const isPassado  = date < isoParaDate(hoje())
+    const isPassado   = date < isoParaDate(hoje())
     const isBlockeado = datasBlockeadas.has(iso)
     if (isPassado || isBlockeado) return 'cal-day blocked past'
 
     const eS = rangeStart && dateParaIso(date) === dateParaIso(rangeStart)
     const eE = rangeEnd   && dateParaIso(date) === dateParaIso(rangeEnd)
-    const hover = hoverDay && rangeStart && !rangeEnd
 
     if (rangeEnd) {
       if (eS && eE) return 'cal-day selected'
@@ -174,7 +253,7 @@ export default function HomePage() {
       if (rangeStart && date > rangeStart && date < rangeEnd!) return 'cal-day in-range'
     } else if (eS) {
       return 'cal-day selected'
-    } else if (hover && hoverDay && rangeStart) {
+    } else if (hoverDay && rangeStart && !rangeEnd) {
       const s = hoverDay < rangeStart ? hoverDay : rangeStart
       const e = hoverDay < rangeStart ? rangeStart : hoverDay
       if (date > s && date < e) return 'cal-day in-range'
@@ -243,8 +322,6 @@ export default function HomePage() {
 
   return (
     <div className="font-sans text-stone-800 min-h-screen bg-stone-100">
-
-      {}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-stone-200">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <span className="font-serif text-lg tracking-tight">
@@ -262,8 +339,6 @@ export default function HomePage() {
       </header>
 
       <main className="pt-14">
-
-        {}
         <section className="hero-gradient relative overflow-hidden">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1' fill='white'/%3E%3C/svg%3E\")", backgroundSize: '40px 40px' }} />
           <div className="max-w-5xl mx-auto px-6 pt-16 pb-0">
@@ -283,60 +358,96 @@ export default function HomePage() {
               </a>
             </div>
 
-            {}
             <div className="relative -mx-6 overflow-hidden">
-              <div className="carousel-track" ref={carouselRef}>
-                {[0, 1].map(slideIdx => (
-                  <div key={slideIdx} className="carousel-slide px-6">
-                    <div className="grid grid-cols-12 gap-3 h-80">
-                      <div
-                        className="col-span-7 rounded-t-2xl overflow-hidden cursor-pointer group relative"
-                        onClick={() => setLbIdx(slideIdx * 3)}
-                        style={{ background: slideIdx === 0 ? 'linear-gradient(135deg,#064e3b,#1D9E75)' : 'linear-gradient(135deg,#064e3b,#059669)' }}
-                      >
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
-                          <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
-                            <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+              <div
+                className="carousel-track"
+                ref={carouselRef}
+                style={{ display: 'flex', width: `${totalSlides * 100}%`, transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)' }}
+              >
+                {slides.map((slide, slideIdx) => {
+                  const baseIdx = slideIdx * 3
+                  const [foto0, foto1, foto2] = slide
+
+                  return (
+                    <div
+                      key={slideIdx}
+                      className="px-6"
+                      style={{ width: `${100 / totalSlides}%`, flexShrink: 0 }}
+                    >
+                      <div className="grid grid-cols-12 gap-3 h-80">
+
+                        <div
+                          className="col-span-7 rounded-t-2xl overflow-hidden cursor-pointer group relative"
+                          onClick={() => openLightbox(baseIdx)}
+                          style={{ background: foto0?.bg ?? '#064e3b' }}
+                        >
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
+                            <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
+                              <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                            </div>
                           </div>
+                          {foto0 && (
+                            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                              <span className="text-white text-sm font-medium">{foto0.label}</span>
+                              <span className="block text-white/60 text-xs mt-0.5">Clique para ampliar</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                          <span className="text-white text-sm font-medium">{slideIdx === 0 ? 'Área da piscina' : 'Área externa'}</span>
-                          <span className="block text-white/60 text-xs mt-0.5">Clique para ampliar</span>
-                        </div>
-                      </div>
-                      <div className="col-span-5 flex flex-col gap-3">
-                        {[
-                          { label: slideIdx === 0 ? 'Churrasqueira' : 'Sala principal', bg: slideIdx === 0 ? 'linear-gradient(135deg,#7c3f00,#d97706)' : 'linear-gradient(135deg,#4c1d95,#7c3aed)', idx: slideIdx * 3 + 1 },
-                          { label: slideIdx === 0 ? 'Área de lazer'  : 'Quarto principal', bg: slideIdx === 0 ? 'linear-gradient(135deg,#1e3a5f,#3b82f6)' : 'linear-gradient(135deg,#7f1d1d,#dc2626)', idx: slideIdx * 3 + 2 },
-                        ].map(item => (
-                          <div key={item.label} className="flex-1 overflow-hidden cursor-pointer group relative rounded-t-2xl" onClick={() => setLbIdx(item.idx)} style={{ background: item.bg }}>
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
-                              <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                <svg width="13" height="13" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+
+                        <div className="col-span-5 flex flex-col gap-3">
+                          {[foto1, foto2].map((foto, i) => foto ? (
+                            <div
+                              key={foto.label}
+                              className="flex-1 overflow-hidden cursor-pointer group relative rounded-t-2xl"
+                              onClick={() => openLightbox(baseIdx + i + 1)}
+                              style={{ background: foto.bg }}
+                            >
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
+                                <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                  <svg width="13" height="13" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                                </div>
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                                <span className="text-white text-xs font-medium">{foto.label}</span>
                               </div>
                             </div>
-                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                              <span className="text-white text-xs font-medium">{item.label}</span>
-                            </div>
-                          </div>
-                        ))}
+                          ) : (
+                            <div key={i} className="flex-1 rounded-t-2xl bg-white/5" />
+                          ))}
+                        </div>
+
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
+
               <button onClick={() => carMove(-1)} className="absolute left-8 top-1/2 -translate-y-6 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-sm z-10">‹</button>
               <button onClick={() => carMove(1)}  className="absolute right-8 top-1/2 -translate-y-6 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-sm z-10">›</button>
-              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                {[0,1].map(i => (
-                  <div key={i} className="h-1.5 rounded-full bg-white transition-all duration-300" style={{ width: i === carIdx ? '20px' : '6px', opacity: i === carIdx ? 1 : 0.4 }} />
+
+              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 flex-wrap justify-center max-w-xs">
+                {slides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setCarIdx(i)
+                      if (carouselRef.current) {
+                        carouselRef.current.style.transform = `translateX(-${i * 100}%)`
+                      }
+                    }}
+                    className="h-1.5 rounded-full bg-white transition-all duration-300"
+                    style={{ width: i === carIdx ? '20px' : '6px', opacity: i === carIdx ? 1 : 0.4 }}
+                  />
                 ))}
+              </div>
+
+              <div className="absolute top-4 right-10 bg-black/30 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full border border-white/20 z-10">
+                {carIdx + 1} / {totalSlides}
               </div>
             </div>
           </div>
         </section>
 
-        {}
         <section id="sobre" className="bg-white border-b border-stone-200">
           <div className="max-w-5xl mx-auto px-6 py-14">
             <div className="grid md:grid-cols-2 gap-12 items-start">
@@ -346,10 +457,10 @@ export default function HomePage() {
                 <p className="text-stone-500 leading-relaxed text-sm">{config?.descricao}</p>
                 <div className="grid grid-cols-4 gap-4 mt-8 pt-8 border-t border-stone-100">
                   {[
-                    { val: config?.area_m2,    label: 'm² totais' },
-                    { val: config?.quartos,     label: 'quartos'   },
-                    { val: config?.banheiros,   label: 'banheiros' },
-                    { val: config?.capacidade,  label: 'pessoas'   },
+                    { val: config?.area_m2,   label: 'm² totais' },
+                    { val: config?.quartos,    label: 'quartos'   },
+                    { val: config?.banheiros,  label: 'banheiros' },
+                    { val: config?.capacidade, label: 'pessoas'   },
                   ].map(item => (
                     <div key={item.label}>
                       <div className="text-2xl font-light text-stone-900">{item.val ?? '—'}</div>
@@ -370,11 +481,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        {}
         <section id="calendario" className="max-w-3xl mx-auto px-4 py-14">
           <div className="flex flex-col gap-6">
 
-            {}
             <div id="precos">
               <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-4">Valores por diária</p>
               <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
@@ -394,7 +503,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {}
             <div>
               <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-4">Escolha as datas</p>
               <div className="bg-white border border-stone-200 rounded-2xl p-6">
@@ -441,7 +549,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {}
             {resumo && (
               <div className="fade-up">
                 <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
@@ -464,7 +571,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {}
         <section id="reservar" className="bg-white border-t border-stone-200">
           <div className="max-w-5xl mx-auto px-6 py-14">
             <div className="max-w-lg">
@@ -529,21 +635,82 @@ export default function HomePage() {
         </footer>
       </main>
 
-      {}
       {lbIdx !== null && (
-        <div className="fixed inset-0 bg-black/92 z-50 flex items-center justify-center" onClick={e => { if (e.target === e.currentTarget) setLbIdx(null) }}>
-          <button onClick={() => setLbIdx(null)} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center text-lg hover:bg-white/20">×</button>
-          <button onClick={() => setLbIdx(i => ((i! - 1 + 6) % 6))} className="absolute left-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white text-xl flex items-center justify-center hover:bg-white/20">‹</button>
-          <div className="w-[80vw] max-w-3xl h-[70vh] rounded-xl flex items-center justify-center text-white/50 text-sm"
-            style={{ background: ['linear-gradient(135deg,#064e3b,#1D9E75)','linear-gradient(135deg,#7c3f00,#d97706)','linear-gradient(135deg,#1e3a5f,#3b82f6)','linear-gradient(135deg,#4c1d95,#7c3aed)','linear-gradient(135deg,#7f1d1d,#dc2626)','linear-gradient(135deg,#064e3b,#059669)'][lbIdx] }}>
-            {['Área da piscina','Churrasqueira','Área de lazer','Sala principal','Quarto principal','Área externa'][lbIdx]}
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            backgroundColor: lbVisible ? 'rgba(0,0,0,0.88)' : 'rgba(0,0,0,0)',
+            backdropFilter: lbVisible ? 'blur(8px)' : 'blur(0px)',
+            transition: 'background-color 0.25s ease, backdrop-filter 0.25s ease',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) closeLightbox() }}
+        >
+
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center text-xl hover:bg-white/20 transition-all z-10"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
+
+          <button
+            onClick={lbPrev}
+            className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white text-xl flex items-center justify-center hover:bg-white/20 transition-all z-10"
+            aria-label="Foto anterior"
+          >‹</button>
+
+          <div
+            className="relative rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center text-white/40 text-sm"
+            style={{
+              width: '80vw',
+              maxWidth: '900px',
+              height: '70vh',
+              background: TODAS_FOTOS[lbIdx]?.bg ?? '#064e3b',
+              opacity: lbVisible ? 1 : 0,
+              transform: lbVisible ? 'scale(1)' : 'scale(0.95)',
+              transition: 'opacity 0.25s ease, transform 0.25s ease',
+            }}
+          >
+
+            <div className="text-center">
+              <div className="text-white/70 text-base font-medium">{TODAS_FOTOS[lbIdx]?.label}</div>
+              <div className="text-white/30 text-xs mt-1">Foto {lbIdx + 1} de {TODAS_FOTOS.length}</div>
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/60 to-transparent">
+              <span className="text-white text-sm font-medium">{TODAS_FOTOS[lbIdx]?.label}</span>
+            </div>
           </div>
-          <button onClick={() => setLbIdx(i => (i! + 1) % 6)} className="absolute right-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white text-xl flex items-center justify-center hover:bg-white/20">›</button>
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 text-xs">{lbIdx + 1} / 6</div>
+
+          <button
+            onClick={lbNext}
+            className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white text-xl flex items-center justify-center hover:bg-white/20 transition-all z-10"
+            aria-label="Próxima foto"
+          >›</button>
+
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 text-xs bg-black/30 px-3 py-1 rounded-full">
+            {lbIdx + 1} / {TODAS_FOTOS.length}
+          </div>
+
+          <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex gap-2 z-10 overflow-x-auto max-w-sm md:max-w-2xl px-2 pb-1">
+            {TODAS_FOTOS.map((foto, i) => (
+              <button
+                key={i}
+                onClick={() => setLbIdx(i)}
+                className="flex-shrink-0 w-12 h-9 rounded-lg overflow-hidden border-2 transition-all"
+                style={{
+                  background: foto.bg,
+                  borderColor: i === lbIdx ? 'white' : 'transparent',
+                  opacity: i === lbIdx ? 1 : 0.5,
+                }}
+                aria-label={foto.label}
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      {}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-900 text-white text-sm px-5 py-3 rounded-full z-50 fade-up">
           {toast}
