@@ -25,9 +25,22 @@ interface DiaStatus {
   motivo: string
 }
 
-interface SlidePhoto {
-  label: string
-  bg: string
+
+const PLACEHOLDER_FOTOS = [
+  { label: 'Área da piscina',  bg: 'linear-gradient(135deg,#064e3b,#1D9E75)' },
+  { label: 'Churrasqueira',    bg: 'linear-gradient(135deg,#7c3f00,#d97706)' },
+  { label: 'Área de lazer',    bg: 'linear-gradient(135deg,#1e3a5f,#3b82f6)' },
+  { label: 'Sala principal',   bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)' },
+  { label: 'Quarto principal', bg: 'linear-gradient(135deg,#7f1d1d,#dc2626)' },
+  { label: 'Área externa',     bg: 'linear-gradient(135deg,#064e3b,#059669)' },
+]
+
+function agruparEmSlides<T>(fotos: T[]): T[][] {
+  const slides: T[][] = []
+  for (let i = 0; i < fotos.length; i += 3) {
+    slides.push(fotos.slice(i, i + 3))
+  }
+  return slides
 }
 
 function hoje(): string {
@@ -46,47 +59,6 @@ function dateParaIso(d: Date): string {
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const FERIADOS_BR = ['01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25']
-
-const TODAS_FOTOS: SlidePhoto[] = [
-  { label: 'Área da piscina',    bg: 'linear-gradient(135deg,#064e3b,#1D9E75)' },
-  { label: 'Churrasqueira',      bg: 'linear-gradient(135deg,#7c3f00,#d97706)' },
-  { label: 'Área de lazer',      bg: 'linear-gradient(135deg,#1e3a5f,#3b82f6)' },
-  { label: 'Sala principal',     bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)' },
-  { label: 'Quarto principal',   bg: 'linear-gradient(135deg,#7f1d1d,#dc2626)' },
-  { label: 'Área externa',       bg: 'linear-gradient(135deg,#064e3b,#059669)' },
-  { label: 'Cozinha',            bg: 'linear-gradient(135deg,#1c1917,#78716c)' },
-  { label: 'Sala de jantar',     bg: 'linear-gradient(135deg,#0c4a6e,#0ea5e9)' },
-  { label: 'Banheiro suite',     bg: 'linear-gradient(135deg,#4a044e,#c026d3)' },
-  { label: 'Varanda',            bg: 'linear-gradient(135deg,#365314,#84cc16)' },
-  { label: 'Área kids',          bg: 'linear-gradient(135deg,#7c2d12,#fb923c)' },
-  { label: 'Piscina noturna',    bg: 'linear-gradient(135deg,#0f172a,#334155)' },
-  { label: 'Jardim',             bg: 'linear-gradient(135deg,#14532d,#4ade80)' },
-  { label: 'Quarto 2',           bg: 'linear-gradient(135deg,#450a0a,#ef4444)' },
-  { label: 'Sala de jogos',      bg: 'linear-gradient(135deg,#1e1b4b,#6366f1)' },
-  { label: 'Espaço gourmet',     bg: 'linear-gradient(135deg,#451a03,#f59e0b)' },
-  { label: 'Academia',           bg: 'linear-gradient(135deg,#0f172a,#475569)' },
-  { label: 'Entrada',            bg: 'linear-gradient(135deg,#042f2e,#2dd4bf)' },
-  { label: 'Terraço',            bg: 'linear-gradient(135deg,#3b0764,#a855f7)' },
-  { label: 'Área gourmet',       bg: 'linear-gradient(135deg,#7c3f00,#b45309)' },
-  { label: 'Deck',               bg: 'linear-gradient(135deg,#052e16,#22c55e)' },
-  { label: 'Garagem',            bg: 'linear-gradient(135deg,#111827,#374151)' },
-  { label: 'Corredor',           bg: 'linear-gradient(135deg,#1e3a5f,#60a5fa)' },
-  { label: 'Quarto 3',           bg: 'linear-gradient(135deg,#500724,#f43f5e)' },
-  { label: 'Sauna',              bg: 'linear-gradient(135deg,#431407,#ea580c)' },
-  { label: 'Banheiro externo',   bg: 'linear-gradient(135deg,#0c4a6e,#38bdf8)' },
-  { label: 'Área de serviço',    bg: 'linear-gradient(135deg,#1c1917,#a8a29e)' },
-  { label: 'Vista frontal',      bg: 'linear-gradient(135deg,#065f46,#34d399)' },
-  { label: 'Pôr do sol',         bg: 'linear-gradient(135deg,#7c2d12,#f97316)' },
-  { label: 'Noite iluminada',    bg: 'linear-gradient(135deg,#020617,#1e40af)' },
-]
-
-function agruparEmSlides(fotos: SlidePhoto[]): SlidePhoto[][] {
-  const slides: SlidePhoto[][] = []
-  for (let i = 0; i < fotos.length; i += 3) {
-    slides.push(fotos.slice(i, i + 3))
-  }
-  return slides
-}
 
 function tipoDia(date: Date, precos: Preco[]): Preco {
   const diaSemana = date.getDay()
@@ -110,19 +82,17 @@ export default function HomePage() {
   const [rangeEnd, setRangeEnd]     = useState<Date | null>(null)
   const [hoverDay, setHoverDay]     = useState<Date | null>(null)
 
-  const [nome, setNome]     = useState('')
-  const [email, setEmail]   = useState('')
+  const [nome, setNome]         = useState('')
+  const [email, setEmail]       = useState('')
   const [telefone, setTelefone] = useState('')
 
   const [enviando, setEnviando] = useState(false)
   const [toast, setToast]       = useState<string | null>(null)
 
-  const [lbIdx, setLbIdx] = useState<number | null>(null)
+  const [lbIdx, setLbIdx]       = useState<number | null>(null)
   const [lbVisible, setLbVisible] = useState(false)
 
   const [carIdx, setCarIdx] = useState(0)
-  const slides = agruparEmSlides(TODAS_FOTOS)
-  const totalSlides = slides.length
   const carouselRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -140,11 +110,17 @@ export default function HomePage() {
       })
   }, [mesSelecionado])
 
+  const fotosReais: string[] = config?.fotos?.length ? config.fotos.slice(0, 30) : []
+  const usandoPlaceholder = fotosReais.length === 0
+
+  const slidesReais = agruparEmSlides(fotosReais)
+  const slidesPlaceholder = agruparEmSlides(PLACEHOLDER_FOTOS)
+
+  const totalSlides = usandoPlaceholder ? slidesPlaceholder.length : slidesReais.length
+
   function openLightbox(idx: number) {
     setLbIdx(idx)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => setLbVisible(true))
-    })
+    requestAnimationFrame(() => requestAnimationFrame(() => setLbVisible(true)))
   }
 
   function closeLightbox() {
@@ -153,16 +129,18 @@ export default function HomePage() {
   }
 
   function lbPrev() {
-    setLbIdx(i => ((i! - 1 + TODAS_FOTOS.length) % TODAS_FOTOS.length))
+    const total = usandoPlaceholder ? PLACEHOLDER_FOTOS.length : fotosReais.length
+    setLbIdx(i => ((i! - 1 + total) % total))
   }
 
   function lbNext() {
-    setLbIdx(i => (i! + 1) % TODAS_FOTOS.length)
+    const total = usandoPlaceholder ? PLACEHOLDER_FOTOS.length : fotosReais.length
+    setLbIdx(i => (i! + 1) % (usandoPlaceholder ? PLACEHOLDER_FOTOS.length : fotosReais.length))
   }
 
   useEffect(() => {
     if (lbIdx === null) return
-    function onKey(e: KeyboardEvent) {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft')  lbPrev()
       if (e.key === 'ArrowRight') lbNext()
       if (e.key === 'Escape')     closeLightbox()
@@ -179,15 +157,20 @@ export default function HomePage() {
     }
   }
 
+  function goToSlide(i: number) {
+    setCarIdx(i)
+    if (carouselRef.current) {
+      carouselRef.current.style.transform = `translateX(-${i * 100}%)`
+    }
+  }
+
   function getDiasDoMes() {
     const { ano, mes } = mesSelecionado
     const primeiro = new Date(ano, mes, 1)
     const ultimo   = new Date(ano, mes + 1, 0)
     const offset   = primeiro.getDay()
     const dias: (Date | null)[] = Array(offset).fill(null)
-    for (let d = 1; d <= ultimo.getDate(); d++) {
-      dias.push(new Date(ano, mes, d))
-    }
+    for (let d = 1; d <= ultimo.getDate(); d++) dias.push(new Date(ano, mes, d))
     return dias
   }
 
@@ -209,36 +192,27 @@ export default function HomePage() {
     if (date < isoParaDate(hoje())) return
 
     if (!rangeStart || (rangeStart && rangeEnd)) {
-      setRangeStart(date)
-      setRangeEnd(null)
-      return
+      setRangeStart(date); setRangeEnd(null); return
     }
-
     if (dateParaIso(date) === dateParaIso(rangeStart)) {
-      setRangeStart(null)
-      return
+      setRangeStart(null); return
     }
 
     const s = date < rangeStart ? date : rangeStart
     const e = date < rangeStart ? rangeStart : date
-
     const d = new Date(s)
     while (d <= e) {
       if (datasBlockeadas.has(dateParaIso(d))) {
         showToast('Há datas bloqueadas nesse período!')
-        setRangeStart(date)
-        setRangeEnd(null)
-        return
+        setRangeStart(date); setRangeEnd(null); return
       }
       d.setDate(d.getDate() + 1)
     }
-
-    setRangeStart(s)
-    setRangeEnd(e)
+    setRangeStart(s); setRangeEnd(e)
   }
 
   function getDiaClasse(date: Date): string {
-    const iso = dateParaIso(date)
+    const iso         = dateParaIso(date)
     const isPassado   = date < isoParaDate(hoje())
     const isBlockeado = datasBlockeadas.has(iso)
     if (isPassado || isBlockeado) return 'cal-day blocked past'
@@ -258,7 +232,6 @@ export default function HomePage() {
       const e = hoverDay < rangeStart ? rangeStart : hoverDay
       if (date > s && date < e) return 'cal-day in-range'
     }
-
     return 'cal-day'
   }
 
@@ -274,24 +247,24 @@ export default function HomePage() {
       tipos.add(p.label)
       d.setDate(d.getDate() + 1)
     }
-    const noites = Math.round((fim.getTime() - rangeStart.getTime()) / 86400000) + 1
-    const fmt = (dt: Date) => `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`
-    const periodo = rangeStart === fim || dateParaIso(rangeStart) === dateParaIso(fim)
+    const noites  = Math.round((fim.getTime() - rangeStart.getTime()) / 86400000) + 1
+    const fmt     = (dt: Date) => `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`
+    const periodo = dateParaIso(rangeStart) === dateParaIso(fim)
       ? fmt(rangeStart)
       : `${fmt(rangeStart)} → ${fmt(fim)}`
     return { total, noites, tipos: [...tipos].join(' + '), periodo }
   }
 
   async function handleReservar() {
-    if (!nome.trim())  { showToast('Preencha seu nome!'); return }
+    if (!nome.trim())  { showToast('Preencha seu nome!');  return }
     if (!rangeStart)   { showToast('Selecione uma data!'); return }
 
     setEnviando(true)
     try {
       const res = await fetch('/api/reservas', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body:    JSON.stringify({
           nome:        nome.trim(),
           email:       email.trim() || null,
           telefone:    telefone.trim() || null,
@@ -299,12 +272,9 @@ export default function HomePage() {
           data_fim:    dateParaIso(rangeEnd ?? rangeStart),
         }),
       })
-
       const data = await res.json()
       if (!res.ok) { showToast(data.error ?? 'Erro ao criar reserva.'); return }
-
       window.open(data.whatsapp_url, '_blank')
-
     } catch {
       showToast('Erro de conexão. Tente novamente.')
     } finally {
@@ -319,6 +289,95 @@ export default function HomePage() {
 
   const resumo = getResumo()
   const dias   = getDiasDoMes()
+  function renderSlide(slideIdx: number) {
+    if (usandoPlaceholder) {
+      const slide = slidesPlaceholder[slideIdx]
+      const [f0, f1, f2] = slide
+      const base = slideIdx * 3
+      return renderSlideLayout(slideIdx, base,
+        f0 ? { bg: f0.bg, label: f0.label, url: undefined } : undefined,
+        f1 ? { bg: f1.bg, label: f1.label, url: undefined } : undefined,
+        f2 ? { bg: f2.bg, label: f2.label, url: undefined } : undefined,
+      )
+    } else {
+      const slide = slidesReais[slideIdx]
+      const [u0, u1, u2] = slide
+      const base = slideIdx * 3
+      return renderSlideLayout(slideIdx, base,
+        u0 ? { bg: undefined, label: `Foto ${base + 1}`,     url: u0 } : undefined,
+        u1 ? { bg: undefined, label: `Foto ${base + 2}`,     url: u1 } : undefined,
+        u2 ? { bg: undefined, label: `Foto ${base + 3}`,     url: u2 } : undefined,
+      )
+    }
+  }
+
+  type FotoSlot = { bg?: string; label: string; url?: string }
+
+  function renderSlideLayout(
+    slideIdx: number,
+    baseIdx: number,
+    f0?: FotoSlot,
+    f1?: FotoSlot,
+    f2?: FotoSlot,
+  ) {
+    const fotoStyle = (f?: FotoSlot): React.CSSProperties =>
+      f?.url
+        ? { backgroundImage: `url(${f.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+        : { background: f?.bg ?? '#1c1917' }
+
+    return (
+      <div
+        key={slideIdx}
+        className="px-6"
+        style={{ width: `${100 / totalSlides}%`, flexShrink: 0 }}
+      >
+        <div className="grid grid-cols-12 gap-3 h-80">
+          <div
+            className="col-span-7 rounded-t-2xl overflow-hidden cursor-pointer group relative"
+            onClick={() => f0 && openLightbox(baseIdx)}
+            style={fotoStyle(f0)}
+          >
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
+              <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
+                <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+              </div>
+            </div>
+            {f0 && (
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                <span className="text-white text-sm font-medium">{f0.label}</span>
+                <span className="block text-white/60 text-xs mt-0.5">Clique para ampliar</span>
+              </div>
+            )}
+          </div>
+          <div className="col-span-5 flex flex-col gap-3">
+            {([f1, f2] as (FotoSlot | undefined)[]).map((f, i) =>
+              f ? (
+                <div
+                  key={i}
+                  className="flex-1 overflow-hidden cursor-pointer group relative rounded-t-2xl"
+                  onClick={() => openLightbox(baseIdx + i + 1)}
+                  style={fotoStyle(f)}
+                >
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                      <svg width="13" height="13" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                    <span className="text-white text-xs font-medium">{f.label}</span>
+                  </div>
+                </div>
+              ) : (
+                <div key={i} className="flex-1 rounded-t-2xl bg-white/5" />
+              )
+            )}
+          </div>
+
+        </div>
+      </div>
+    )
+  }
+  const totalFotos = usandoPlaceholder ? PLACEHOLDER_FOTOS.length : fotosReais.length
 
   return (
     <div className="font-sans text-stone-800 min-h-screen bg-stone-100">
@@ -339,6 +398,7 @@ export default function HomePage() {
       </header>
 
       <main className="pt-14">
+
         <section className="hero-gradient relative overflow-hidden">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1' fill='white'/%3E%3C/svg%3E\")", backgroundSize: '40px 40px' }} />
           <div className="max-w-5xl mx-auto px-6 pt-16 pb-0">
@@ -357,94 +417,47 @@ export default function HomePage() {
                 Ver datas disponíveis <span className="text-xs">↓</span>
               </a>
             </div>
+            {totalSlides > 0 && (
+              <div className="relative -mx-6 overflow-hidden">
+                <div
+                  ref={carouselRef}
+                  style={{
+                    display:   'flex',
+                    width:     `${totalSlides * 100}%`,
+                    transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)',
+                  }}
+                >
+                  {Array.from({ length: totalSlides }, (_, i) => renderSlide(i))}
+                </div>
 
-            <div className="relative -mx-6 overflow-hidden">
-              <div
-                className="carousel-track"
-                ref={carouselRef}
-                style={{ display: 'flex', width: `${totalSlides * 100}%`, transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)' }}
-              >
-                {slides.map((slide, slideIdx) => {
-                  const baseIdx = slideIdx * 3
-                  const [foto0, foto1, foto2] = slide
+                {totalSlides > 1 && (
+                  <>
+                    <button onClick={() => carMove(-1)} className="absolute left-8 top-1/2 -translate-y-6 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-sm z-10">‹</button>
+                    <button onClick={() => carMove(1)}  className="absolute right-8 top-1/2 -translate-y-6 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-sm z-10">›</button>
+                  </>
+                )}
 
-                  return (
-                    <div
-                      key={slideIdx}
-                      className="px-6"
-                      style={{ width: `${100 / totalSlides}%`, flexShrink: 0 }}
-                    >
-                      <div className="grid grid-cols-12 gap-3 h-80">
+                {/* Dots */}
+                {totalSlides > 1 && (
+                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                    {Array.from({ length: totalSlides }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => goToSlide(i)}
+                        className="h-1.5 rounded-full bg-white transition-all duration-300"
+                        style={{ width: i === carIdx ? '20px' : '6px', opacity: i === carIdx ? 1 : 0.4 }}
+                      />
+                    ))}
+                  </div>
+                )}
 
-                        <div
-                          className="col-span-7 rounded-t-2xl overflow-hidden cursor-pointer group relative"
-                          onClick={() => openLightbox(baseIdx)}
-                          style={{ background: foto0?.bg ?? '#064e3b' }}
-                        >
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
-                            <div className="w-11 h-11 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100">
-                              <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                            </div>
-                          </div>
-                          {foto0 && (
-                            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                              <span className="text-white text-sm font-medium">{foto0.label}</span>
-                              <span className="block text-white/60 text-xs mt-0.5">Clique para ampliar</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="col-span-5 flex flex-col gap-3">
-                          {[foto1, foto2].map((foto, i) => foto ? (
-                            <div
-                              key={foto.label}
-                              className="flex-1 overflow-hidden cursor-pointer group relative rounded-t-2xl"
-                              onClick={() => openLightbox(baseIdx + i + 1)}
-                              style={{ background: foto.bg }}
-                            >
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
-                                <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                  <svg width="13" height="13" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
-                                </div>
-                              </div>
-                              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                                <span className="text-white text-xs font-medium">{foto.label}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div key={i} className="flex-1 rounded-t-2xl bg-white/5" />
-                          ))}
-                        </div>
-
-                      </div>
-                    </div>
-                  )
-                })}
+                {totalSlides > 1 && (
+                  <div className="absolute top-4 right-10 bg-black/30 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full border border-white/20 z-10">
+                    {carIdx + 1} / {totalSlides}
+                  </div>
+                )}
               </div>
-
-              <button onClick={() => carMove(-1)} className="absolute left-8 top-1/2 -translate-y-6 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-sm z-10">‹</button>
-              <button onClick={() => carMove(1)}  className="absolute right-8 top-1/2 -translate-y-6 w-9 h-9 rounded-full bg-black/30 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/50 transition-all text-sm z-10">›</button>
-
-              <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 flex-wrap justify-center max-w-xs">
-                {slides.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      setCarIdx(i)
-                      if (carouselRef.current) {
-                        carouselRef.current.style.transform = `translateX(-${i * 100}%)`
-                      }
-                    }}
-                    className="h-1.5 rounded-full bg-white transition-all duration-300"
-                    style={{ width: i === carIdx ? '20px' : '6px', opacity: i === carIdx ? 1 : 0.4 }}
-                  />
-                ))}
-              </div>
-
-              <div className="absolute top-4 right-10 bg-black/30 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full border border-white/20 z-10">
-                {carIdx + 1} / {totalSlides}
-              </div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -580,9 +593,9 @@ export default function HomePage() {
 
               <div className="space-y-4">
                 {[
-                  { label:'Nome completo', type:'text',  value:nome,     onChange:setNome,     placeholder:'João Silva'       },
-                  { label:'E-mail',        type:'email', value:email,    onChange:setEmail,    placeholder:'joao@email.com'   },
-                  { label:'WhatsApp',      type:'tel',   value:telefone, onChange:setTelefone, placeholder:'(11) 99999-0000'  },
+                  { label:'Nome completo', type:'text',  value:nome,     onChange:setNome,     placeholder:'João Silva'      },
+                  { label:'E-mail',        type:'email', value:email,    onChange:setEmail,    placeholder:'joao@email.com'  },
+                  { label:'WhatsApp',      type:'tel',   value:telefone, onChange:setTelefone, placeholder:'(11) 99999-0000' },
                 ].map(field => (
                   <div key={field.label}>
                     <label className="block text-xs font-medium text-stone-500 mb-1.5">{field.label}</label>
@@ -634,83 +647,59 @@ export default function HomePage() {
           </div>
         </footer>
       </main>
-
       {lbIdx !== null && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{
             backgroundColor: lbVisible ? 'rgba(0,0,0,0.88)' : 'rgba(0,0,0,0)',
-            backdropFilter: lbVisible ? 'blur(8px)' : 'blur(0px)',
+            backdropFilter:   lbVisible ? 'blur(8px)' : 'blur(0px)',
             transition: 'background-color 0.25s ease, backdrop-filter 0.25s ease',
           }}
           onClick={e => { if (e.target === e.currentTarget) closeLightbox() }}
         >
+          <button onClick={closeLightbox} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center text-xl hover:bg-white/20 transition-all z-10">×</button>
 
-          <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white flex items-center justify-center text-xl hover:bg-white/20 transition-all z-10"
-            aria-label="Fechar"
-          >
-            ×
-          </button>
-
-          <button
-            onClick={lbPrev}
-            className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white text-xl flex items-center justify-center hover:bg-white/20 transition-all z-10"
-            aria-label="Foto anterior"
-          >‹</button>
+          {totalFotos > 1 && (
+            <button onClick={lbPrev} className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white text-xl flex items-center justify-center hover:bg-white/20 transition-all z-10">‹</button>
+          )}
 
           <div
-            className="relative rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center text-white/40 text-sm"
+            className="relative rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center"
             style={{
-              width: '80vw',
-              maxWidth: '900px',
-              height: '70vh',
-              background: TODAS_FOTOS[lbIdx]?.bg ?? '#064e3b',
-              opacity: lbVisible ? 1 : 0,
+              width:     '80vw',
+              maxWidth:  '900px',
+              height:    '70vh',
+              opacity:   lbVisible ? 1 : 0,
               transform: lbVisible ? 'scale(1)' : 'scale(0.95)',
               transition: 'opacity 0.25s ease, transform 0.25s ease',
+              ...(usandoPlaceholder
+                ? { background: PLACEHOLDER_FOTOS[lbIdx]?.bg ?? '#064e3b' }
+                : { backgroundImage: `url(${fotosReais[lbIdx]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              ),
             }}
           >
-
-            <div className="text-center">
-              <div className="text-white/70 text-base font-medium">{TODAS_FOTOS[lbIdx]?.label}</div>
-              <div className="text-white/30 text-xs mt-1">Foto {lbIdx + 1} de {TODAS_FOTOS.length}</div>
-            </div>
-
+            {usandoPlaceholder && (
+              <div className="text-center">
+                <div className="text-white/70 text-base font-medium">{PLACEHOLDER_FOTOS[lbIdx]?.label}</div>
+                <div className="text-white/30 text-xs mt-1">Foto {lbIdx + 1} de {totalFotos}</div>
+              </div>
+            )}
             <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-black/60 to-transparent">
-              <span className="text-white text-sm font-medium">{TODAS_FOTOS[lbIdx]?.label}</span>
+              <span className="text-white text-sm font-medium">
+                {usandoPlaceholder ? PLACEHOLDER_FOTOS[lbIdx]?.label : `Foto ${lbIdx + 1}`}
+              </span>
             </div>
           </div>
 
-          <button
-            onClick={lbNext}
-            className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white text-xl flex items-center justify-center hover:bg-white/20 transition-all z-10"
-            aria-label="Próxima foto"
-          >›</button>
+          {totalFotos > 1 && (
+            <button onClick={lbNext} className="absolute right-4 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white text-xl flex items-center justify-center hover:bg-white/20 transition-all z-10">›</button>
+          )}
 
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 text-xs bg-black/30 px-3 py-1 rounded-full">
-            {lbIdx + 1} / {TODAS_FOTOS.length}
-          </div>
-
-          <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex gap-2 z-10 overflow-x-auto max-w-sm md:max-w-2xl px-2 pb-1">
-            {TODAS_FOTOS.map((foto, i) => (
-              <button
-                key={i}
-                onClick={() => setLbIdx(i)}
-                className="flex-shrink-0 w-12 h-9 rounded-lg overflow-hidden border-2 transition-all"
-                style={{
-                  background: foto.bg,
-                  borderColor: i === lbIdx ? 'white' : 'transparent',
-                  opacity: i === lbIdx ? 1 : 0.5,
-                }}
-                aria-label={foto.label}
-              />
-            ))}
+            {lbIdx + 1} / {totalFotos}
           </div>
         </div>
       )}
-
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-stone-900 text-white text-sm px-5 py-3 rounded-full z-50 fade-up">
           {toast}
