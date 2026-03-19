@@ -1,9 +1,9 @@
 
 
-import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
-import { gerarToken, gerarChave } from '@/lib/tokens'
+import { supabaseAdmin } from '@/lib/supabase'
+import { gerarChave, gerarToken } from '@/lib/tokens'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET() {
   const session = await getSession()
@@ -163,7 +163,12 @@ export async function POST(request: NextRequest) {
       `*Link de confirmação:* ${linkConfirmar}`,
     ].filter(Boolean).join('\n')
 
-    const whatsappUrl = `https://wa.me/${config?.whatsapp_admin}?text=${encodeURIComponent(mensagem)}`
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      const base = isMobile
+      ? 'https://api.whatsapp.com/send'
+      : 'https://web.whatsapp.com/send'
+
+    const whatsappUrl = `${base}?phone=${config?.whatsapp_admin}&text=${encodeURIComponent(mensagem)}`
 
     return NextResponse.json({
       ok:          true,
