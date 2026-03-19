@@ -163,12 +163,7 @@ export async function POST(request: NextRequest) {
       `*Link de confirmação:* ${linkConfirmar}`,
     ].filter(Boolean).join('\n')
 
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-      const base = isMobile
-      ? 'https://api.whatsapp.com/send'
-      : 'https://web.whatsapp.com/send'
-
-    const whatsappUrl = `${base}?phone=${config?.whatsapp_admin}&text=${encodeURIComponent(mensagem)}`
+    const whatsappUrl = `https://wa.me/${config?.whatsapp_admin}?text=${encodeURIComponent(mensagem)}`
 
     return NextResponse.json({
       ok:          true,
