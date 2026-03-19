@@ -277,7 +277,7 @@ export default function AdminPage() {
               setSidebarOpen(o => !o)
               if (mainRef.current) mainRef.current.style.marginLeft = sidebarOpen ? '0' : '224px'
             }}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:bg-stone-100 transition-all hidden md:flex"
+            className="w-8 h-8 rounded-lg items-center justify-center text-stone-400 hover:bg-stone-100 transition-all hidden md:flex"
           >
             <IconHamburger />
           </button>
@@ -298,7 +298,8 @@ export default function AdminPage() {
 
       <div className="flex pt-14 min-h-screen">
         <aside
-          className="fixed left-0 top-14 bottom-0 bg-white border-r border-stone-200 flex flex-col py-4"
+          id="sidebar"
+          className="fixed left-0 top-14 bottom-0 bg-white border-r border-stone-200 flex-col py-4 z-40 hidden md:flex"
           style={{ width: sidebarOpen ? '224px' : '0', transition: 'width 0.25s cubic-bezier(0.4,0,0.2,1)', overflow: 'hidden' }}
         >
           <nav className="flex-1 px-3 space-y-0.5" style={{ width: '200px' }}>
@@ -332,7 +333,8 @@ export default function AdminPage() {
 
         <main
           ref={mainRef}
-          className="flex-1 p-4 md:p-8"
+          id="mainContent"
+          className="flex-1 p-4 md:p-8 pb-24 md:pb-8"
           style={{ marginLeft: sidebarOpen ? '224px' : '0', transition: 'margin-left 0.25s cubic-bezier(0.4,0,0.2,1)' }}
         >
 
