@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { ADMIN_CARGO } from '@/lib/constants'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -15,7 +16,7 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('redirect', pathname)
       return NextResponse.redirect(url)
     }
-    if (session.cargo !== 2) {
+    if (session.cargo !== ADMIN_CARGO) {
       const url = request.nextUrl.clone()
       url.pathname = '/acesso-negado'
       return NextResponse.redirect(url)

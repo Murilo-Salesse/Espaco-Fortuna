@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { ADMIN_CARGO } from '@/lib/constants'
 
 export async function GET(
   _request: NextRequest,
@@ -10,7 +11,7 @@ export async function GET(
 ) {
   const { token } = await params
   const session = await getSession()
-  if (!session || session.cargo !== 2) {
+  if (!session || session.cargo !== ADMIN_CARGO) {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
   }
 
@@ -33,7 +34,7 @@ export async function PUT(
 ) {
   const { token } = await params
   const session = await getSession()
-  if (!session || session.cargo !== 2) {
+  if (!session || session.cargo !== ADMIN_CARGO) {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
   }
 
@@ -88,7 +89,7 @@ export async function DELETE(
 ) {
   const { token } = await params
   const session = await getSession()
-  if (!session || session.cargo !== 2) {
+  if (!session || session.cargo !== ADMIN_CARGO) {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
   }
 

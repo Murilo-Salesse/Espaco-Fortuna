@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { ADMIN_CARGO } from '@/lib/constants'
 
 export async function GET() {
   const { data, error } = await supabase
@@ -16,7 +17,7 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   const session = await getSession()
-  if (!session || session.cargo !== 2)
+  if (!session || session.cargo !== ADMIN_CARGO)
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
 
   const { precos } = await request.json() 

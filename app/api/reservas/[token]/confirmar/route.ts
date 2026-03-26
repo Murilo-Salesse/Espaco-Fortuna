@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
+import { ADMIN_CARGO } from '@/lib/constants'
 
 export async function POST(
   request: NextRequest,
@@ -15,7 +16,7 @@ export async function POST(
       return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 })
     }
 
-    if (session.cargo !== 2) {
+    if (session.cargo !== ADMIN_CARGO) {
       return NextResponse.json(
         { error: 'Acesso negado. Somente administradores podem confirmar reservas.' },
         { status: 403 }

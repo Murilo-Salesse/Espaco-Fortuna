@@ -1,13 +1,14 @@
 
 
 import { getSession } from '@/lib/auth'
+import { ADMIN_CARGO } from '@/lib/constants'
 import { supabaseAdmin } from '@/lib/supabase'
 import { gerarChave, gerarToken } from '@/lib/tokens'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET() {
   const session = await getSession()
-  if (!session || session.cargo !== 2)
+  if (!session || session.cargo !== ADMIN_CARGO)
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
 
   const { data, error } = await supabaseAdmin
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     const now = Date.now()
 
     const session = await getSession()
-    const isAdmin = session?.cargo === 2
+    const isAdmin = session?.cargo === ADMIN_CARGO
 
     if (!isAdmin) {
       let record = rateLimitMap.get(ip)

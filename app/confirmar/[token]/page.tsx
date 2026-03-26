@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ADMIN_CARGO } from '@/lib/constants'
 
 type Estado = 'loading' | 'negado' | 'chave-invalida' | 'reserva' | 'sucesso' | 'recusado' | 'erro'
 
@@ -81,7 +82,7 @@ export default function ConfirmarPage() {
         return
       }
 
-      if (user.cargo !== 2) {
+      if (user.cargo !== ADMIN_CARGO) {
         setEstado('negado')
         return
       }
@@ -182,7 +183,7 @@ export default function ConfirmarPage() {
               <h1 className="font-serif text-2xl text-stone-900 mb-2">Acesso negado</h1>
               <p className="text-sm text-stone-400 mb-2">Sua conta não tem permissão para confirmar reservas.</p>
               <p className="text-xs text-stone-300 mb-8">
-                Esta ação é restrita a <span className="bg-stone-100 text-stone-400 px-1.5 py-0.5 rounded font-mono">cargo 2</span>.
+                Esta ação é restrita ao <span className="bg-stone-100 text-stone-400 px-1.5 py-0.5 rounded font-mono">Administrador</span>.
               </p>
               <button onClick={logout} className="text-sm text-stone-500 hover:text-stone-700 border border-stone-200 px-4 py-2 rounded-xl transition-colors">
                 Entrar com outra conta

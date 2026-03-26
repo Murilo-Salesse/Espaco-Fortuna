@@ -17,7 +17,7 @@ const ADMIN = {
   nome:  'Admin Fortuna',
   email: process.env.ADMIN_MAIL!,
   senha: process.env.ADMIN_PASSWORD!,
-  cargo: 2,
+  cargo: Number(process.env.ADMIN_ID),
 }
 
 async function main() {

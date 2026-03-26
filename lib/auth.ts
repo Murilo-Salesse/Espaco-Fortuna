@@ -5,6 +5,8 @@ const JWT_SECRET  = new TextEncoder().encode(process.env.JWT_SECRET!)
 const COOKIE_NAME = 'fortuna_session'
 const EXPIRES_IN  = '7d'
 
+import { ADMIN_CARGO } from './constants'
+
 export interface SessionPayload {
   id:    string
   nome:  string
