@@ -50,12 +50,6 @@ async function main() {
   }
 
   console.log('✅ Administrador criado com sucesso!')
-  console.log(`   ID:    ${data.id}`)
-  console.log(`   Nome:  ${data.nome}`)
-  console.log(`   Email: ${data.email}`)
-  console.log(`   Cargo: ${data.cargo}`)
-  console.log('')
-  console.log('🔑 Lembre-se de trocar a senha padrão antes de ir para produção!')
 }
 
 main()

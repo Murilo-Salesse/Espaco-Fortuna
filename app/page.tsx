@@ -75,6 +75,7 @@ export default function HomePage() {
     const now = new Date()
     return { ano: now.getFullYear(), mes: now.getMonth() }
   })
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i)
 
   const [rangeStart, setRangeStart] = useState<Date | null>(null)
   const [rangeEnd, setRangeEnd]     = useState<Date | null>(null)
@@ -317,11 +318,11 @@ export default function HomePage() {
               <span className="inline-block text-green-200 text-xs font-medium tracking-widest uppercase mb-4">
                 Locação exclusiva · {config?.localizacao ?? 'Salto, SP'}
               </span>
-              <h1 className="font-serif text-5xl md:text-6xl text-white leading-tight mb-5">
+              <h1 className="font-serif text-5xl md:text-6xl text-white leading-tight mb-5 reveal-l">
                 Seu evento,<br />
                 <em className="not-italic text-green-400">espaço completo.</em>
               </h1>
-              <p className="text-green-100/80 text-base leading-relaxed mb-8">
+              <p className="text-green-100/80 text-base leading-relaxed mb-8 reveal-l" style={{ animationDelay: '0.1s' }}>
                 {config?.descricao ?? 'Espaço de lazer privativo com piscina, churrasqueira e muito conforto.'}
               </p>
               <a href="#calendario" className="inline-flex items-center gap-2 bg-white text-green-700 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors">
@@ -345,7 +346,7 @@ export default function HomePage() {
                     >
                       {f0 && (
                         <div
-                          className="rounded-t-2xl overflow-hidden cursor-pointer group relative flex-shrink-0"
+                          className="rounded-t-2xl overflow-hidden cursor-pointer group relative flex-shrink-0 scale-in"
                           style={{ width: '55%', ...fotoStyle(f0) }}
                           onClick={() => openLightbox(sIdx * FOTOS_POR_SLIDE)}
                         >
@@ -366,8 +367,8 @@ export default function HomePage() {
                           f ? (
                             <div
                               key={i}
-                              className="flex-1 rounded-t-2xl overflow-hidden cursor-pointer group relative"
-                              style={fotoStyle(f)}
+                              className="flex-1 rounded-t-2xl overflow-hidden cursor-pointer group relative scale-in"
+                              style={{ ...fotoStyle(f), animationDelay: `${(i + 1) * 0.1}s` }}
                               onClick={() => openLightbox(sIdx * FOTOS_POR_SLIDE + i + 1)}
                             >
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all flex items-center justify-center">
@@ -419,7 +420,7 @@ export default function HomePage() {
         </section>
 
         <section id="sobre" className="bg-white border-b border-stone-200">
-          <div className="max-w-5xl mx-auto px-6 py-14">
+          <div className="max-w-5xl mx-auto px-6 py-14 fade-up">
             <div className="grid md:grid-cols-2 gap-12 items-start">
               <div>
                 <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-3">O espaço</p>
@@ -442,15 +443,15 @@ export default function HomePage() {
               <div>
                 <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-4">O que tem</p>
                 <div className="flex flex-wrap gap-2">
-                  {(config?.comodidades ?? []).map(c => (
-                    <span key={c} className="text-xs px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full">{c}</span>
+                  {(config?.comodidades ?? []).map((c, i) => (
+                    <span key={c} className="text-xs px-3 py-1.5 bg-stone-100 text-stone-600 rounded-full fade-up" style={{ animationDelay: `${i * 0.05}s` }}>{c}</span>
                   ))}
                 </div>
               </div>
             </div>
           </div>
         </section>
-        <section id="calendario" className="max-w-3xl mx-auto px-4 py-14">
+        <section id="calendario" className="max-w-3xl mx-auto px-4 py-14 fade-up">
           <div className="flex flex-col gap-6">
 
             <div id="precos">
@@ -476,9 +477,27 @@ export default function HomePage() {
               <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-4">Escolha as datas</p>
               <div className="bg-white border border-stone-200 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-base font-medium text-stone-900">
-                    {MESES[mesSelecionado.mes]} {mesSelecionado.ano}
-                  </h3>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-base font-medium text-stone-900 hidden sm:block">
+                      {MESES[mesSelecionado.mes]} {mesSelecionado.ano}
+                    </h3>
+                    <div className="flex gap-1 items-center">
+                      <select
+                        value={mesSelecionado.mes}
+                        onChange={(e) => setMesSelecionado(p => ({ ...p, mes: Number(e.target.value) }))}
+                        className="text-xs bg-stone-50 border border-stone-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-green-500"
+                      >
+                        {MESES.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                      </select>
+                      <select
+                        value={mesSelecionado.ano}
+                        onChange={(e) => setMesSelecionado(p => ({ ...p, ano: Number(e.target.value) }))}
+                        className="text-xs bg-stone-50 border border-stone-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-green-500"
+                      >
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
+                  </div>
                   <div className="flex gap-1">
                     <button onClick={() => mudarMes(-1)} className="w-8 h-8 rounded-lg border border-stone-200 text-stone-400 hover:border-stone-400 text-sm flex items-center justify-center transition-all">‹</button>
                     <button onClick={() => mudarMes(1)}  className="w-8 h-8 rounded-lg border border-stone-200 text-stone-400 hover:border-stone-400 text-sm flex items-center justify-center transition-all">›</button>
@@ -539,7 +558,7 @@ export default function HomePage() {
             )}
           </div>
         </section>
-        <section id="reservar" className="bg-white border-t border-stone-200">
+        <section id="reservar" className="bg-white border-t border-stone-200 fade-up">
           <div className="max-w-5xl mx-auto px-6 py-14">
             <div className="max-w-lg">
               <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-3">Reservar</p>
@@ -594,8 +613,62 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+        <section id="localizacao" className="bg-stone-50 fade-up">
+          <div className="max-w-5xl mx-auto px-6 py-14">
+            <div className="flex flex-col md:flex-row gap-8 items-center">
+              <div className="flex-1">
+                <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-3">Localização</p>
+                <h2 className="font-serif text-3xl text-stone-900 mb-4">Como chegar</h2>
+                <p className="text-stone-500 text-sm mb-6 leading-relaxed">
+                  Localizado em uma área tranquila de Birigui, o {config?.nome ?? 'Espaço Fortuna'} oferece o equilíbrio perfeito entre fácil acesso e total privacidade.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white border border-stone-200 flex items-center justify-center flex-none mt-0.5">
+                      <svg width="14" height="14" fill="none" stroke="#78716c" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-0.5">Endereço</div>
+                      <div className="text-sm text-stone-700 font-medium">R. Anézio Caretta, 284, Birigui - SP</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white border border-stone-200 flex items-center justify-center flex-none mt-0.5">
+                      <svg width="14" height="14" fill="none" stroke="#78716c" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-0.5">Ponto de referência</div>
+                      <div className="text-sm text-stone-700 font-medium">Bairro Itapuã · Próximo ao centro</div>
+                    </div>
+                  </div>
+                </div>
+                <a
+                  href="https://www.google.com/maps/dir/?api=1&destination=R.+Anézio+Caretta,+284+-+Birigui+-+SP"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 mt-8 text-xs font-bold uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors"
+                >
+                  Abrir no Google Maps 
+                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                </a>
+              </div>
+              <div className="flex-1 w-full aspect-square md:aspect-auto md:h-[400px] rounded-3xl overflow-hidden border border-stone-200 shadow-sm bg-stone-100">
+                <iframe 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 0 }} 
+                  loading="lazy" 
+                  allowFullScreen 
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps?q=${encodeURIComponent('R. Anézio Caretta, 284, Birigui - SP')}&output=embed`}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
 
         <footer className="bg-stone-900 text-stone-400">
+
           <div className="max-w-5xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
             <span className="font-serif text-white text-lg">{config?.nome ?? 'Fortuna'}<span className="text-green-400">.</span></span>
             <p className="text-xs">{config?.localizacao} · Locação exclusiva · © {new Date().getFullYear()}</p>

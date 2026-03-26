@@ -83,6 +83,14 @@ create table reservas (
   data_fim     date not null,
   valor_total  numeric(10,2) not null,
   status       text not null default 'pendente', -- 'pendente' | 'confirmada' | 'cancelada'
+  
+  -- Campos adicionados para controle interno (Planilha 2026)
+  contrato          text,
+  contrato_assinado boolean default false,
+  valor_pago        numeric(10,2) default 0,
+  saldo             numeric(10,2) default 0,
+  pgto_detalhes     text,
+
   criado_em    timestamptz default now(),
   atualizado_em timestamptz default now()
 );

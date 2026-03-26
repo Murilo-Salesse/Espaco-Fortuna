@@ -9,6 +9,11 @@ interface Reserva {
   id: string; token: string; nome: string; email: string; telefone: string
   data_inicio: string; data_fim: string; valor_total: number
   status: 'pendente' | 'confirmada' | 'cancelada'
+  contrato?: string;
+  contrato_assinado?: boolean;
+  valor_pago?: number;
+  saldo?: number;
+  pgto_detalhes?: string;
 }
 interface Preco { tipo: string; label: string; valor: number }
 interface Configuracao {
@@ -58,9 +63,15 @@ export default function AdminPage() {
   const [pendentes, setPendentes] = useState<Map<string, 'bloquear' | 'liberar'>>(new Map())
 
   const [confirmModal, setConfirmModal] = useState<Reserva | null>(null)
+  const [editModal, setEditModal]       = useState<Reserva | null>(null)
+  const [filtroStatus, setFiltroStatus] = useState<string>('todas')
   const [comodModal, setComodModal]     = useState(false)
+  const [novoModal, setNovoModal]       = useState(false)
+  const [novaReserva, setNovaReserva]   = useState<Partial<Reserva>>({ status: 'pendente', valor_pago: 0 })
+
   const [novaComod, setNovaComod]       = useState('')
   const [comodidades, setComodidades]   = useState<string[]>([])
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i)
 
   const [fotos, setFotos]             = useState<string[]>([])
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
@@ -228,15 +239,77 @@ export default function AdminPage() {
   }
 
   async function confirmarReserva(reserva: Reserva) {
-    const res = await fetch(`/api/reservas/${reserva.token}/confirmar`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ chave: reserva.token }),
-    })
-    if (res.ok) {
-      setReservas(prev => prev.map(r => r.id === reserva.id ? { ...r, status: 'confirmada' } : r))
-      carregarDatas(); showToast('Reserva confirmada! Datas bloqueadas.')
-    } else { const d = await res.json(); showToast(d.error ?? 'Erro ao confirmar.') }
-    setConfirmModal(null)
+    try {
+      const res = await fetch(`/api/reservas/${reserva.token}/confirmar`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chave: reserva.token }),
+      })
+      if (res.ok) {
+        setReservas(prev => prev.map(r => r.id === reserva.id ? { ...r, status: 'confirmada' } : r))
+        carregarDatas(); showToast('Reserva confirmada! Datas bloqueadas.')
+      } else { 
+        const d = await res.json(); 
+        showToast(d.error ?? 'Erro ao confirmar.') 
+      }
+    } catch (err) {
+      showToast('Erro ao confirmar reserva.')
+    } finally {
+      setConfirmModal(null)
+    }
+  }
+
+  async function salvarEdicao(reserva: Reserva) {
+    try {
+      const res = await fetch(`/api/reservas/${reserva.token}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(reserva),
+      })
+      if (!res.ok) throw new Error('Erro ao salvar')
+      
+      setReservas(prev => prev.map(r => r.token === reserva.token ? reserva : r))
+      showToast('Reserva atualizada com sucesso!')
+      setEditModal(null)
+    } catch (err) {
+      showToast('Erro ao atualizar. Tente novamente.')
+    }
+  }
+
+  async function criarManual() {
+    if (!novaReserva.nome || !novaReserva.data_inicio || !novaReserva.data_fim) {
+      showToast('Preencha os campos obrigatórios!'); return
+    }
+    try {
+      const res = await fetch('/api/reservas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novaReserva),
+      })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error || 'Erro ao criar')
+
+      setReservas(prev => [d.reserva || { ...novaReserva, id: d.token, token: d.token }, ...prev])
+      showToast('Reserva criada com sucesso!')
+      setNovoModal(false)
+      setNovaReserva({ status: 'pendente', valor_pago: 0 })
+      
+      if (novaReserva.status === 'confirmada') carregarDatas()
+    } catch (err: any) {
+      showToast(err.message || 'Erro ao criar.')
+    }
+  }
+
+  async function deletarReserva(token: string) {
+    if (!confirm('Tem certeza que deseja DELETAR esta reserva permanentemente? Esta ação não pode ser desfeita.')) return
+    try {
+      const res = await fetch(`/api/reservas/${token}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Erro ao deletar')
+      setReservas(prev => prev.filter(r => r.token !== token))
+      showToast('Reserva excluída com sucesso!')
+      carregarDatas()
+    } catch (err) {
+      showToast('Erro ao excluir.')
+    }
   }
 
   async function cancelarReserva(token: string) {
@@ -388,9 +461,28 @@ export default function AdminPage() {
 
           {tab === 'reservas' && (
             <div className="animate-in">
-              <div className="mb-6">
-                <h1 className="text-xl md:text-2xl font-serif text-stone-900">Reservas</h1>
-                <p className="text-stone-400 text-sm mt-1">Gerencie todas as reservas.</p>
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                  <h1 className="text-xl md:text-2xl font-serif text-stone-900">Reservas</h1>
+                  <p className="text-stone-400 text-sm mt-1">Gerencie todas as reservas.</p>
+                </div>
+                <div className="flex bg-stone-100 p-1 rounded-xl self-start">
+                  {['todas', 'pendente', 'confirmada', 'cancelada'].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setFiltroStatus(s)}
+                      className={`text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-lg transition-all ${filtroStatus === s ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      {s === 'todas' ? 'Todas' : s === 'confirmada' ? 'Pagas/Conf.' : s}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setNovoModal(true)}
+                  className="flex items-center gap-2 bg-stone-900 text-white text-[10px] uppercase tracking-wider font-bold px-4 py-2 rounded-xl hover:bg-stone-700 transition-all shadow-sm"
+                >
+                  <IconPlus /> Adicionar Reserva
+                </button>
               </div>
               <div className="flex flex-col gap-3 md:hidden">
                 {reservas.map(r => (
@@ -422,32 +514,50 @@ export default function AdminPage() {
                   <thead>
                     <tr className="border-b border-stone-100 text-xs text-stone-400 font-medium uppercase tracking-wide">
                       <th className="text-left px-6 py-3">Cliente</th>
+                      <th className="text-left px-4 py-3">Contrato</th>
                       <th className="text-left px-4 py-3">Período</th>
-                      <th className="text-right px-4 py-3">Valor</th>
-                      <th className="text-left px-4 py-3">Token</th>
+                      <th className="text-right px-4 py-3">Total</th>
+                      <th className="text-right px-4 py-3">Pago</th>
+                      <th className="text-right px-4 py-3">Saldo</th>
                       <th className="text-left px-4 py-3">Status</th>
                       <th className="px-6 py-3" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
-                    {reservas.map(r => (
-                      <tr key={r.id}>
-                        <td className="px-6 py-4"><div className="font-medium text-stone-800">{r.nome}</div><div className="text-xs text-stone-400">{r.email} · {r.telefone}</div></td>
+                    {reservas
+                      .filter(r => filtroStatus === 'todas' || r.status === filtroStatus)
+                      .map(r => (
+                      <tr key={r.id} className={r.status === 'cancelada' ? 'opacity-50' : ''}>
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-stone-800">{r.nome}</div>
+                          <div className="text-[10px] text-stone-400">{r.email} · {r.telefone}</div>
+                        </td>
+                        <td className="px-4 py-4 text-xs text-stone-500">
+                          {r.contrato ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="bg-stone-100 px-2 py-0.5 rounded text-stone-600 font-medium self-start">{r.contrato}</span>
+                              {r.contrato_assinado && <span className="text-[9px] text-green-600 font-bold uppercase">Assinado</span>}
+                            </div>
+                          ) : '-'}
+                        </td>
                         <td className="px-4 py-4 text-xs text-stone-600">{fmt(r.data_inicio)}{r.data_inicio !== r.data_fim && ` → ${fmt(r.data_fim)}`}</td>
                         <td className="px-4 py-4 text-right font-medium text-stone-800">R$ {Number(r.valor_total).toLocaleString('pt-BR')}</td>
-                        <td className="px-4 py-4"><code className="text-[11px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded">{r.token}</code></td>
+                        <td className="px-4 py-4 text-right text-xs text-green-600">{r.valor_pago ? `R$ ${Number(r.valor_pago).toLocaleString('pt-BR')}` : '-'}</td>
+                        <td className="px-4 py-4 text-right text-xs font-medium text-red-500">{r.saldo ? `R$ ${Number(r.saldo).toLocaleString('pt-BR')}` : '-'}</td>
                         <td className="px-4 py-4"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${r.status === 'confirmada' ? 'bg-green-100 text-green-700' : r.status === 'pendente' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-400'}`}>{r.status}</span></td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center gap-2 justify-end">
+                            <button onClick={() => setEditModal(r)} className="p-2 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-all" title="Editar"><IconEdit /></button>
                             {r.status === 'pendente' && <button onClick={() => setConfirmModal(r)} className="text-xs border border-green-300 text-green-700 px-3 py-1.5 rounded-full hover:bg-green-50 transition-colors">Confirmar</button>}
                             {r.status !== 'cancelada' && <button onClick={() => cancelarReserva(r.token)} className="text-xs text-stone-400 hover:text-red-500 transition-colors">Cancelar</button>}
+                            <button onClick={() => deletarReserva(r.token)} className="p-2 text-stone-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Excluir Permanentemente"><IconTrash /></button>
                           </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {reservas.length === 0 && <p className="px-6 py-8 text-center text-sm text-stone-400">Nenhuma reserva ainda.</p>}
+                {reservas.filter(r => filtroStatus === 'todas' || r.status === filtroStatus).length === 0 && <p className="px-6 py-8 text-center text-sm text-stone-400">Nenhuma reserva encontrada com este filtro.</p>}
               </div>
             </div>
           )}
@@ -460,7 +570,25 @@ export default function AdminPage() {
               </div>
               <div className="bg-white border border-stone-200 rounded-2xl p-4 md:p-6 max-w-md">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-base font-medium text-stone-900">{MESES[calMes.mes]} {calMes.ano}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-medium text-stone-900 hidden sm:block">{MESES[calMes.mes]} {calMes.ano}</h3>
+                    <div className="flex gap-1 items-center">
+                      <select
+                        value={calMes.mes}
+                        onChange={(e) => { setCalMes(p => ({ ...p, mes: Number(e.target.value) })); setPendentes(new Map()) }}
+                        className="text-xs bg-stone-50 border border-stone-200 rounded-lg px-2 py-1 focus:outline-none focus:border-green-500"
+                      >
+                        {MESES.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                      </select>
+                      <select
+                        value={calMes.ano}
+                        onChange={(e) => { setCalMes(p => ({ ...p, ano: Number(e.target.value) })); setPendentes(new Map()) }}
+                        className="text-xs bg-stone-50 border border-stone-200 rounded-lg px-2 py-1 focus:outline-none focus:border-green-500"
+                      >
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
+                  </div>
                   <div className="flex gap-1">
                     <button onClick={() => { setCalMes(p => { let m=p.mes-1,a=p.ano; if(m<0){m=11;a--} return {mes:m,ano:a} }); setPendentes(new Map()) }} className="w-8 h-8 rounded-lg border border-stone-200 text-stone-400 hover:border-stone-400 text-sm flex items-center justify-center">‹</button>
                     <button onClick={() => { setCalMes(p => { let m=p.mes+1,a=p.ano; if(m>11){m=0;a++} return {mes:m,ano:a} }); setPendentes(new Map()) }} className="w-8 h-8 rounded-lg border border-stone-200 text-stone-400 hover:border-stone-400 text-sm flex items-center justify-center">›</button>
@@ -799,7 +927,204 @@ export default function AdminPage() {
         </div>
       )}
 
+      {editModal && (
+        <div className="modal-overlay open" onClick={e => { if (e.target === e.currentTarget) setEditModal(null) }}>
+          <div className="bg-white rounded-2xl border border-stone-200 p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-serif text-lg text-stone-900 mb-4">Editar reserva</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-stone-400 mb-1.5 uppercase font-bold tracking-wider">Status</label>
+                <div className="flex gap-2 bg-stone-100 p-1 rounded-xl">
+                  {['pendente', 'confirmada', 'cancelada'].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setEditModal(p => p ? { ...p, status: s as any } : null)}
+                      className={`flex-1 text-[10px] uppercase tracking-wider font-bold py-2 rounded-lg transition-all ${editModal.status === s ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Contrato</label>
+                  <input
+                    type="text"
+                    value={editModal.contrato ?? ''}
+                    onChange={e => setEditModal(p => p ? { ...p, contrato: e.target.value } : null)}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                    placeholder="Ex: 015/2026"
+                  />
+                </div>
+                <div className="flex items-end pb-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editModal.contrato_assinado ?? false}
+                      onChange={e => setEditModal(p => p ? { ...p, contrato_assinado: e.target.checked } : null)}
+                      className="w-4 h-4 rounded text-green-500 focus:ring-green-500 border-stone-300"
+                    />
+                    <span className="text-xs text-stone-600">Contrato assinado</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Valor Pago (R$)</label>
+                  <input
+                    type="number"
+                    value={editModal.valor_pago ?? 0}
+                    onChange={e => {
+                      const v = Number(e.target.value)
+                      setEditModal(p => p ? { ...p, valor_pago: v, saldo: (p.valor_total || 0) - v } : null)
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Saldo (R$)</label>
+                  <input
+                    type="number"
+                    value={editModal.saldo ?? 0}
+                    onChange={e => setEditModal(p => p ? { ...p, saldo: Number(e.target.value) } : null)}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500 bg-stone-50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-stone-400 mb-1.5">Detalhes do pagamento / Observações</label>
+                <textarea
+                  rows={3}
+                  value={editModal.pgto_detalhes ?? ''}
+                  onChange={e => setEditModal(p => p ? { ...p, pgto_detalhes: e.target.value } : null)}
+                  className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500 resize-none"
+                  placeholder="Datas de parcelas, forma de pgto..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6 pt-4 border-t border-stone-100">
+              <button onClick={() => setEditModal(null)} className="flex-1 text-sm border border-stone-200 py-2.5 rounded-xl text-stone-500 hover:bg-stone-50">Cancelar</button>
+              <button onClick={() => salvarEdicao(editModal)} className="flex-1 text-sm bg-stone-900 text-white py-2.5 rounded-xl hover:bg-stone-700 font-medium">Salvar alterações</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {novoModal && (
+        <div className="modal-overlay open" onClick={e => { if (e.target === e.currentTarget) setNovoModal(false) }}>
+          <div className="bg-white rounded-2xl border border-stone-200 p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-serif text-lg text-stone-900 mb-4">Nova reserva manual</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-stone-400 mb-1.5 uppercase font-bold tracking-wider">Status Inicial</label>
+                <div className="flex gap-2 bg-stone-100 p-1 rounded-xl">
+                  {['pendente', 'confirmada'].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setNovaReserva(p => ({ ...p, status: s as any }))}
+                      className={`flex-1 text-[10px] uppercase tracking-wider font-bold py-2 rounded-lg transition-all ${novaReserva.status === s ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-stone-400 mb-1.5">Nome do Cliente *</label>
+                <input
+                  type="text"
+                  value={novaReserva.nome ?? ''}
+                  onChange={e => setNovaReserva(p => ({ ...p, nome: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  placeholder="Nome completo"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">E-mail</label>
+                  <input
+                    type="email"
+                    value={novaReserva.email ?? ''}
+                    onChange={e => setNovaReserva(p => ({ ...p, email: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Telefone</label>
+                  <input
+                    type="tel"
+                    value={novaReserva.telefone ?? ''}
+                    onChange={e => setNovaReserva(p => ({ ...p, telefone: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Data Início *</label>
+                  <input
+                    type="date"
+                    value={novaReserva.data_inicio ?? ''}
+                    onChange={e => setNovaReserva(p => ({ ...p, data_inicio: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Data Fim *</label>
+                  <input
+                    type="date"
+                    value={novaReserva.data_fim ?? ''}
+                    onChange={e => setNovaReserva(p => ({ ...p, data_fim: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pb-2 border-b border-stone-100">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Contrato</label>
+                  <input
+                    type="text"
+                    value={novaReserva.contrato ?? ''}
+                    onChange={e => setNovaReserva(p => ({ ...p, contrato: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Valor Pago (R$)</label>
+                  <input
+                    type="number"
+                    value={novaReserva.valor_pago ?? 0}
+                    onChange={e => setNovaReserva(p => ({ ...p, valor_pago: Number(e.target.value) }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+              
+              <p className="text-[10px] text-stone-400">O valor total e o saldo serão calculados automaticamente se você deixar em branco (com base na tabela de preços).</p>
+            </div>
+
+            <div className="flex gap-2 mt-6 pt-4 border-t border-stone-100">
+              <button onClick={() => setNovoModal(false)} className="flex-1 text-sm border border-stone-200 py-2.5 rounded-xl text-stone-500 hover:bg-stone-50">Cancelar</button>
+              <button onClick={criarManual} className="flex-1 text-sm bg-stone-900 text-white py-2.5 rounded-xl hover:bg-stone-700 font-medium">Criar Reserva</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
+
+
         <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 bg-stone-900 text-white text-sm px-5 py-3 rounded-full shadow-lg z-50 fade-up">{toast}</div>
       )}
     </div>

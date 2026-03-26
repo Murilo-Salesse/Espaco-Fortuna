@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from('reservas')
-    .select('id, token, nome, email, telefone, data_inicio, data_fim, valor_total, status, criado_em')
+    .select('id, token, nome, email, telefone, data_inicio, data_fim, valor_total, status, criado_em, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes')
     .order('criado_em', { ascending: false })
 
   if (error) return NextResponse.json({ error: 'Erro ao buscar reservas.' }, { status: 500 })
@@ -21,27 +21,35 @@ export async function GET() {
 
 const rateLimitMap = new Map<string, { count: number, resetAt: number }>()
 
-// ── POST — cria nova reserva (usuário) ────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for') || 'unknown'
     const now = Date.now()
 
-    let record = rateLimitMap.get(ip)
-    if (!record || record.resetAt < now) {
-      record = { count: 1, resetAt: now + 60000 }
-      rateLimitMap.set(ip, record)
-    } else {
-      record.count++
-      if (record.count > 5) {
-        return NextResponse.json(
-          { error: 'Detectamos muitas tentativas simultâneas. Aguarde 1 minuto.' },
-          { status: 429 }
-        )
+    const session = await getSession()
+    const isAdmin = session?.cargo === 2
+
+    if (!isAdmin) {
+      let record = rateLimitMap.get(ip)
+      if (!record || record.resetAt < now) {
+        record = { count: 1, resetAt: now + 60000 }
+        rateLimitMap.set(ip, record)
+      } else {
+        record.count++
+        if (record.count > 5) {
+          return NextResponse.json(
+            { error: 'Detectamos muitas tentativas simultâneas. Aguarde 1 minuto.' },
+            { status: 429 }
+          )
+        }
       }
     }
 
-    const { nome, email, telefone, data_inicio, data_fim } = await request.json()
+    const { 
+      nome, email, telefone, data_inicio, data_fim, 
+      status: manualStatus, contrato, valor_pago, pgto_detalhes 
+    } = await request.json()
+
 
     if (!nome || !data_inicio || !data_fim) {
       return NextResponse.json(
@@ -113,7 +121,7 @@ export async function POST(request: NextRequest) {
       tentativas++
     }
 
-    const { error } = await supabaseAdmin
+    const { data: novaReserva, error } = await supabaseAdmin
       .from('reservas')
       .insert({
         token,
@@ -124,12 +132,31 @@ export async function POST(request: NextRequest) {
         data_inicio,
         data_fim,
         valor_total,
-        status:      'pendente',
+        status:      isAdmin && manualStatus ? manualStatus : 'pendente',
+        contrato:    isAdmin ? contrato : null,
+        valor_pago:  isAdmin ? (valor_pago || 0) : 0,
+        saldo:       isAdmin ? (valor_total - (valor_pago || 0)) : valor_total,
+        pgto_detalhes: isAdmin ? pgto_detalhes : null
       })
       .select()
       .single()
 
     if (error) throw error
+
+    if (isAdmin && manualStatus === 'confirmada' && novaReserva) {
+      const datas = []
+      const dBlock = new Date(inicio)
+      while (dBlock <= fim) {
+        datas.push({
+          data: dBlock.toISOString().split('T')[0],
+          motivo: 'reserva_confirmada',
+          reserva_id: novaReserva.id
+        })
+        dBlock.setDate(dBlock.getDate() + 1)
+      }
+      await supabaseAdmin.from('datas_bloqueadas').insert(datas)
+    }
+
 
     const { data: config } = await supabaseAdmin
       .from('configuracao')
@@ -180,3 +207,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
