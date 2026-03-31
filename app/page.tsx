@@ -642,7 +642,7 @@ export default function HomePage() {
                     </div>
                     <div>
                       <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-0.5">Endereço</div>
-                      <div className="text-sm text-stone-700 font-medium">R. Anézio Caretta, 284, Birigui - SP</div>
+                      <div className="text-sm text-stone-700 font-medium">Rua Anézio Caretta, 284, Parque das Arvores II, Birigui - SP</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
