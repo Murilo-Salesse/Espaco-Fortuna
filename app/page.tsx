@@ -325,9 +325,15 @@ export default function HomePage() {
               <p className="text-green-100/80 text-base leading-relaxed mb-8 reveal-l" style={{ animationDelay: '0.1s' }}>
                 {config?.descricao ?? 'Espaço de lazer privativo com piscina, churrasqueira e muito conforto.'}
               </p>
-              <a href="#calendario" className="inline-flex items-center gap-2 bg-white text-green-700 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors">
-                Ver datas disponíveis <span className="text-xs">↓</span>
-              </a>
+              <div className="flex flex-wrap items-center gap-4">
+                <a href="#calendario" className="inline-flex items-center gap-2 bg-white text-green-700 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors shadow-sm">
+                  Ver datas disponíveis <span className="text-xs">↓</span>
+                </a>
+                <a href="/modelo-contrato.docx" download className="inline-flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium px-4 py-2.5 transition-colors">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
+                  Contrato de Exemplo
+                </a>
+              </div>
             </div>
             {totalSlides > 0 && (
               <div className="relative -mx-8 overflow-hidden" style={{ height: '400px' }}>
@@ -563,7 +569,14 @@ export default function HomePage() {
             <div className="max-w-lg">
               <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-3">Reservar</p>
               <h2 className="font-serif text-3xl text-stone-900 mb-2">Seus dados</h2>
-              <p className="text-stone-400 text-sm mb-8">Preencha e clique em confirmar. O resumo vai direto para o WhatsApp.</p>
+              <p className="text-stone-400 text-sm mb-4">Preencha e clique em confirmar. O resumo vai direto para o WhatsApp.</p>
+
+              <div className="mb-8">
+                <a href="/modelo-contrato.docx" download className="inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors bg-stone-50 hover:bg-stone-100 px-4 py-2 rounded-xl border border-stone-200">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                  Ver contrato de exemplo
+                </a>
+              </div>
 
               <div className="space-y-4">
                 {[
