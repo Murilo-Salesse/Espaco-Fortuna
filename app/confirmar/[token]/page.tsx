@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams, useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ADMIN_CARGO } from '@/lib/constants'
 
-type Estado = 'loading' | 'negado' | 'chave-invalida' | 'reserva' | 'sucesso' | 'recusado' | 'erro'
+type Estado = 'loading' | 'negado' | 'reserva' | 'sucesso' | 'recusado' | 'erro'
 
 interface Reserva {
   token: string
@@ -36,9 +36,7 @@ function diffDias(inicio: string, fim: string) {
 
 export default function ConfirmarPage() {
   const { token }    = useParams<{ token: string }>()
-  const searchParams = useSearchParams()
   const router       = useRouter()
-  const chaveUrl     = searchParams.get('chave')
 
   const [estado, setEstado]   = useState<Estado>('loading')
   const [session, setSession] = useState<Session | null>(null)
@@ -52,6 +50,16 @@ export default function ConfirmarPage() {
       const meData = await meRes.json()
       const user: Session | null = meData.usuario ?? null
       setSession(user)
+
+      if (!user) {
+        router.push(`/login?redirect=/confirmar/${token}`)
+        return
+      }
+
+      if (user.cargo !== ADMIN_CARGO) {
+        setEstado('negado')
+        return
+      }
 
       const rRes = await fetch(`/api/reservas/${token}`)
       const rData = await rRes.json()
@@ -76,33 +84,11 @@ export default function ConfirmarPage() {
       }
 
       setReserva(res)
-
-      if (!user) {
-        router.push(`/login?redirect=/confirmar/${token}?chave=${chaveUrl}`)
-        return
-      }
-
-      if (user.cargo !== ADMIN_CARGO) {
-        setEstado('negado')
-        return
-      }
-
-      const chkRes = await fetch(`/api/reservas/${token}/verificar-chave`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ chave: chaveUrl }),
-      })
-
-      if (!chkRes.ok) {
-        setEstado('chave-invalida')
-        return
-      }
-
       setEstado('reserva')
     }
 
     init()
-  }, [token, chaveUrl, router])
+  }, [token, router])
 
   async function confirmar() {
     if (!reserva) return
@@ -110,8 +96,6 @@ export default function ConfirmarPage() {
     try {
       const res = await fetch(`/api/reservas/${token}/confirmar`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ chave: chaveUrl }),
       })
       if (res.ok) {
         setEstado('sucesso')
@@ -129,8 +113,14 @@ export default function ConfirmarPage() {
     if (!reserva) return
     setLoading(true)
     try {
-      await fetch(`/api/reservas/${token}/cancelar`, { method: 'POST' })
-      setEstado('recusado')
+      const res = await fetch(`/api/reservas/${token}/cancelar`, { method: 'POST' })
+      if (res.ok) {
+        setEstado('recusado')
+      } else {
+        const data = await res.json()
+        setErroInfo({ titulo: 'Erro ao recusar', msg: data.error ?? 'Tente novamente.' })
+        setEstado('erro')
+      }
     } finally {
       setLoading(false)
     }
@@ -138,7 +128,7 @@ export default function ConfirmarPage() {
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' })
-    router.push(`/login?redirect=/confirmar/${token}?chave=${chaveUrl}`)
+    router.push(`/login?redirect=/confirmar/${token}`)
   }
 
   return (
@@ -188,23 +178,6 @@ export default function ConfirmarPage() {
               <button onClick={logout} className="text-sm text-stone-500 hover:text-stone-700 border border-stone-200 px-4 py-2 rounded-xl transition-colors">
                 Entrar com outra conta
               </button>
-            </div>
-          )}
-
-          {}
-          {estado === 'chave-invalida' && (
-            <div className="fade-up text-center py-10">
-              <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-5">
-                <svg width="26" height="26" fill="none" stroke="#d97706" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-                </svg>
-              </div>
-              <h1 className="font-serif text-2xl text-stone-900 mb-2">Link inválido</h1>
-              <p className="text-sm text-stone-400 mb-8">A chave de segurança não é válida.<br/>Use o link original recebido no WhatsApp.</p>
-              <a href="/admin" className="inline-flex items-center gap-2 text-sm text-green-600 hover:text-green-700">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-                Ir para o painel
-              </a>
             </div>
           )}
 

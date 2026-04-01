@@ -27,6 +27,8 @@ interface DiaInfo { data: string; motivo: string }
 const MESES       = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 const FERIADOS_BR = ['01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25']
+const RESERVA_STATUS_OPTIONS: Reserva['status'][] = ['pendente', 'confirmada', 'cancelada']
+const NOVA_RESERVA_STATUS_OPTIONS: Array<Extract<Reserva['status'], 'pendente' | 'confirmada'>> = ['pendente', 'confirmada']
 
 function isFeriado(d: Date) {
   const mesdia = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
@@ -34,6 +36,10 @@ function isFeriado(d: Date) {
 }
 function fmt(iso: string) {
   const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback
 }
 
 const IconGrid      = () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -241,8 +247,7 @@ export default function AdminPage() {
   async function confirmarReserva(reserva: Reserva) {
     try {
       const res = await fetch(`/api/reservas/${reserva.token}/confirmar`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ chave: reserva.token }),
+        method:'POST',
       })
       if (res.ok) {
         setReservas(prev => prev.map(r => r.id === reserva.id ? { ...r, status: 'confirmada' } : r))
@@ -251,7 +256,7 @@ export default function AdminPage() {
         const d = await res.json(); 
         showToast(d.error ?? 'Erro ao confirmar.') 
       }
-    } catch (err) {
+    } catch {
       showToast('Erro ao confirmar reserva.')
     } finally {
       setConfirmModal(null)
@@ -265,13 +270,15 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(reserva),
       })
-      if (!res.ok) throw new Error('Erro ao salvar')
-      
-      setReservas(prev => prev.map(r => r.token === reserva.token ? reserva : r))
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erro ao salvar')
+
+      setReservas(prev => prev.map(r => r.token === reserva.token ? data.reserva : r))
       showToast('Reserva atualizada com sucesso!')
       setEditModal(null)
-    } catch (err) {
-      showToast('Erro ao atualizar. Tente novamente.')
+      carregarDatas()
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Erro ao atualizar. Tente novamente.'))
     }
   }
 
@@ -294,8 +301,8 @@ export default function AdminPage() {
       setNovaReserva({ status: 'pendente', valor_pago: 0 })
       
       if (novaReserva.status === 'confirmada') carregarDatas()
-    } catch (err: any) {
-      showToast(err.message || 'Erro ao criar.')
+    } catch (error) {
+      showToast(getErrorMessage(error, 'Erro ao criar.'))
     }
   }
 
@@ -307,7 +314,7 @@ export default function AdminPage() {
       setReservas(prev => prev.filter(r => r.token !== token))
       showToast('Reserva excluída com sucesso!')
       carregarDatas()
-    } catch (err) {
+    } catch {
       showToast('Erro ao excluir.')
     }
   }
@@ -398,7 +405,7 @@ export default function AdminPage() {
             ))}
           </nav>
           <div className="px-4 pb-2" style={{ width: '200px' }}>
-            <a href="/" target="_blank" className="flex items-center gap-2 text-xs text-stone-400 hover:text-green-600 transition-colors">
+            <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-stone-400 hover:text-green-600 transition-colors">
               <IconLink /> Ver site
             </a>
           </div>
@@ -936,10 +943,10 @@ export default function AdminPage() {
               <div>
                 <label className="block text-xs text-stone-400 mb-1.5 uppercase font-bold tracking-wider">Status</label>
                 <div className="flex gap-2 bg-stone-100 p-1 rounded-xl">
-                  {['pendente', 'confirmada', 'cancelada'].map(s => (
+                  {RESERVA_STATUS_OPTIONS.map(s => (
                     <button
                       key={s}
-                      onClick={() => setEditModal(p => p ? { ...p, status: s as any } : null)}
+                      onClick={() => setEditModal(p => p ? { ...p, status: s } : null)}
                       className={`flex-1 text-[10px] uppercase tracking-wider font-bold py-2 rounded-lg transition-all ${editModal.status === s ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
                     >
                       {s}
@@ -1025,10 +1032,10 @@ export default function AdminPage() {
               <div>
                 <label className="block text-xs text-stone-400 mb-1.5 uppercase font-bold tracking-wider">Status Inicial</label>
                 <div className="flex gap-2 bg-stone-100 p-1 rounded-xl">
-                  {['pendente', 'confirmada'].map(s => (
+                  {NOVA_RESERVA_STATUS_OPTIONS.map(s => (
                     <button
                       key={s}
-                      onClick={() => setNovaReserva(p => ({ ...p, status: s as any }))}
+                      onClick={() => setNovaReserva(p => ({ ...p, status: s }))}
                       className={`flex-1 text-[10px] uppercase tracking-wider font-bold py-2 rounded-lg transition-all ${novaReserva.status === s ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
                     >
                       {s}

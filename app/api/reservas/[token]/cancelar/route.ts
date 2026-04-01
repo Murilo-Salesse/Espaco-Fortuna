@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { ADMIN_CARGO } from '@/lib/constants'
+import { unblockReservationDates } from '@/lib/reservas'
 
 export async function POST(
   _request: NextRequest,
@@ -24,16 +25,17 @@ export async function POST(
     if (error || !reserva) return NextResponse.json({ error: 'Reserva não encontrada.' }, { status: 404 })
     if (reserva.status === 'cancelada') return NextResponse.json({ error: 'Reserva já cancelada.' }, { status: 409 })
 
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from('reservas')
       .update({ status: 'cancelada' })
       .eq('id', reserva.id)
 
+    if (updateError) {
+      throw updateError
+    }
+
     if (reserva.status === 'confirmada') {
-      await supabaseAdmin
-        .from('datas_bloqueadas')
-        .delete()
-        .eq('reserva_id', reserva.id)
+      await unblockReservationDates(reserva.id)
     }
 
     return NextResponse.json({ ok: true, message: `Reserva de ${reserva.nome} cancelada.` })
@@ -43,4 +45,3 @@ export async function POST(
     return NextResponse.json({ error: 'Erro interno.' }, { status: 500 })
   }
 }
-

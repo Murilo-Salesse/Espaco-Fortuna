@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
     if (!session) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
-      url.searchParams.set('redirect', pathname + request.nextUrl.search)
+      url.searchParams.set('redirect', pathname)
       return NextResponse.redirect(url)
     }
   }

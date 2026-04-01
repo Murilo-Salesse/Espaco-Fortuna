@@ -36,9 +36,13 @@ async function main() {
 
   const senha_hash = await bcrypt.hash(ADMIN.senha, 10)
   
-  const { senha, ...dadosUsuario } = ADMIN
+  const dadosUsuario = {
+    nome: ADMIN.nome,
+    email: ADMIN.email,
+    cargo: ADMIN.cargo,
+  }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('usuarios')
     .insert({ ...dadosUsuario, senha_hash })
     .select('id, nome, email, cargo')

@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
+import { sanitizeInternalRedirect } from '@/lib/security'
 
 export default function LoginForm() {
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') ?? '/admin'
+  const redirect = sanitizeInternalRedirect(searchParams.get('redirect'))
 
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
@@ -32,7 +33,7 @@ export default function LoginForm() {
         return
       }
 
-      window.location.href = redirect
+      window.location.assign(redirect)
     } catch {
       setErro('Erro de conexão. Tente novamente.')
     } finally {

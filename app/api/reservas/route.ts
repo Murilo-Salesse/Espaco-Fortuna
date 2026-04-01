@@ -1,56 +1,84 @@
-
-
+import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { ADMIN_CARGO } from '@/lib/constants'
+import { consumeRateLimit } from '@/lib/rate-limit'
+import {
+  blockReservationDates,
+  calculateReservationTotal,
+  findBlockedDates,
+  formatDisplayDate,
+  getDateRange,
+  isReservaStatus,
+  MAX_RESERVA_DAYS,
+  normalizeCurrencyValue,
+  normalizeOptionalText,
+  normalizeText,
+} from '@/lib/reservas'
+import { getClientIp } from '@/lib/security'
 import { supabaseAdmin } from '@/lib/supabase'
 import { gerarChave, gerarToken } from '@/lib/tokens'
-import { NextRequest, NextResponse } from 'next/server'
+
+const RESERVA_SELECT =
+  'id, token, nome, email, telefone, data_inicio, data_fim, valor_total, status, criado_em, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes'
+
+function formatBlockedDates(dateRange: string[]): string {
+  return dateRange.map(formatDisplayDate).join(', ')
+}
 
 export async function GET() {
   const session = await getSession()
-  if (!session || session.cargo !== ADMIN_CARGO)
+  if (!session || session.cargo !== ADMIN_CARGO) {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
+  }
 
   const { data, error } = await supabaseAdmin
     .from('reservas')
-    .select('id, token, nome, email, telefone, data_inicio, data_fim, valor_total, status, criado_em, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes')
+    .select(RESERVA_SELECT)
     .order('criado_em', { ascending: false })
 
-  if (error) return NextResponse.json({ error: 'Erro ao buscar reservas.' }, { status: 500 })
+  if (error) {
+    return NextResponse.json({ error: 'Erro ao buscar reservas.' }, { status: 500 })
+  }
+
   return NextResponse.json({ reservas: data })
 }
 
-const rateLimitMap = new Map<string, { count: number, resetAt: number }>()
-
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for') || 'unknown'
-    const now = Date.now()
-
     const session = await getSession()
     const isAdmin = session?.cargo === ADMIN_CARGO
 
     if (!isAdmin) {
-      let record = rateLimitMap.get(ip)
-      if (!record || record.resetAt < now) {
-        record = { count: 1, resetAt: now + 60000 }
-        rateLimitMap.set(ip, record)
-      } else {
-        record.count++
-        if (record.count > 5) {
-          return NextResponse.json(
-            { error: 'Detectamos muitas tentativas simultâneas. Aguarde 1 minuto.' },
-            { status: 429 }
-          )
-        }
+      const limit = await consumeRateLimit({
+        namespace: 'reservas:criar',
+        identifier: getClientIp(request.headers),
+        limit: 5,
+        windowSeconds: 10 * 60,
+        blockSeconds: 10 * 60,
+      })
+
+      if (!limit.allowed) {
+        return NextResponse.json(
+          { error: 'Muitas tentativas em sequência. Aguarde alguns minutos.' },
+          {
+            status: 429,
+            headers: { 'Retry-After': String(limit.retryAfter || 60) },
+          }
+        )
       }
     }
 
-    const { 
-      nome, email, telefone, data_inicio, data_fim, 
-      status: manualStatus, contrato, valor_pago, pgto_detalhes 
-    } = await request.json()
-
+    const body = await request.json()
+    const nome = normalizeText(body.nome, 120)
+    const email = normalizeOptionalText(body.email, 160)
+    const telefone = normalizeOptionalText(body.telefone, 40)
+    const data_inicio = typeof body.data_inicio === 'string' ? body.data_inicio : ''
+    const data_fim = typeof body.data_fim === 'string' ? body.data_fim : ''
+    const manualStatus =
+      isAdmin && isReservaStatus(body.status) ? body.status : 'pendente'
+    const contrato = isAdmin ? normalizeOptionalText(body.contrato, 120) : null
+    const valor_pago = isAdmin ? normalizeCurrencyValue(body.valor_pago) ?? 0 : 0
+    const pgto_detalhes = isAdmin ? normalizeOptionalText(body.pgto_detalhes, 2000) : null
 
     if (!nome || !data_inicio || !data_fim) {
       return NextResponse.json(
@@ -59,67 +87,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const inicio = new Date(data_inicio)
-    const fim    = new Date(data_fim)
+    const dateRange = getDateRange(data_inicio, data_fim)
+    if (!dateRange) {
+      return NextResponse.json({ error: 'Período da reserva inválido.' }, { status: 400 })
+    }
 
-    if (inicio > fim) {
+    if (dateRange.length > MAX_RESERVA_DAYS) {
       return NextResponse.json(
-        { error: 'A data de início não pode ser depois da data de fim.' },
+        { error: `O período máximo permitido é de ${MAX_RESERVA_DAYS} dias.` },
         { status: 400 }
       )
     }
 
-    const { data: datas_ocupadas } = await supabaseAdmin
-      .from('datas_bloqueadas')
-      .select('data')
-      .gte('data', data_inicio)
-      .lte('data', data_fim)
-
-    if (datas_ocupadas && datas_ocupadas.length > 0) {
-      const ocupadas = datas_ocupadas.map(d => d.data).join(', ')
+    const blockedDates = await findBlockedDates(dateRange)
+    if (blockedDates.length > 0) {
       return NextResponse.json(
-        { error: `As seguintes datas já estão bloqueadas: ${ocupadas}` },
+        { error: `As seguintes datas já estão bloqueadas: ${formatBlockedDates(blockedDates)}` },
         { status: 409 }
       )
     }
 
-    const { data: precos } = await supabaseAdmin
-      .from('precos')
-      .select('tipo, valor')
-
-    const precoMap: Record<string, number> = {}
-    precos?.forEach(p => { precoMap[p.tipo] = Number(p.valor) })
-
-    const FERIADOS = ['01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25']
-
-    let valor_total = 0
-    const d = new Date(inicio)
-    while (d <= fim) {
-      const diaSemana = d.getDay() 
-      const mesdia    = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-      const isFeriado = FERIADOS.includes(mesdia)
-      const isFds     = diaSemana === 0 || diaSemana === 6
-
-      if (isFeriado)        valor_total += precoMap['feriado'] || 800
-      else if (isFds)       valor_total += precoMap['fds']     || 600
-      else                  valor_total += precoMap['semana']  || 350
-
-      d.setDate(d.getDate() + 1)
-    }
+    const valor_total = await calculateReservationTotal(dateRange)
 
     let token = gerarToken()
     const chave = gerarChave()
 
-    let tentativas = 0
-    while (tentativas < 5) {
-      const { data: existe } = await supabaseAdmin
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const { data: existing } = await supabaseAdmin
         .from('reservas')
         .select('id')
         .eq('token', token)
-        .single()
-      if (!existe) break
+        .maybeSingle()
+
+      if (!existing) break
       token = gerarToken()
-      tentativas++
     }
 
     const { data: novaReserva, error } = await supabaseAdmin
@@ -127,79 +128,86 @@ export async function POST(request: NextRequest) {
       .insert({
         token,
         chave,
-        nome:        nome.trim(),
-        email:       email?.trim() || null,
-        telefone:    telefone?.trim() || null,
+        nome,
+        email,
+        telefone,
         data_inicio,
         data_fim,
         valor_total,
-        status:      isAdmin && manualStatus ? manualStatus : 'pendente',
-        contrato:    isAdmin ? contrato : null,
-        valor_pago:  isAdmin ? (valor_pago || 0) : 0,
-        saldo:       isAdmin ? (valor_total - (valor_pago || 0)) : valor_total,
-        pgto_detalhes: isAdmin ? pgto_detalhes : null
+        status: manualStatus,
+        contrato,
+        valor_pago,
+        saldo: Math.max(0, valor_total - valor_pago),
+        pgto_detalhes,
       })
-      .select()
+      .select(RESERVA_SELECT)
       .single()
 
-    if (error) throw error
-
-    if (isAdmin && manualStatus === 'confirmada' && novaReserva) {
-      const datas = []
-      const dBlock = new Date(inicio)
-      while (dBlock <= fim) {
-        datas.push({
-          data: dBlock.toISOString().split('T')[0],
-          motivo: 'reserva_confirmada',
-          reserva_id: novaReserva.id
-        })
-        dBlock.setDate(dBlock.getDate() + 1)
-      }
-      await supabaseAdmin.from('datas_bloqueadas').insert(datas)
+    if (error || !novaReserva) {
+      throw error ?? new Error('Falha ao criar reserva.')
     }
 
+    if (manualStatus === 'confirmada') {
+      const blockResult = await blockReservationDates(novaReserva.id, dateRange)
+
+      if (blockResult.conflictDates.length > 0) {
+        await supabaseAdmin.from('reservas').delete().eq('id', novaReserva.id)
+
+        return NextResponse.json(
+          {
+            error: `Não foi possível confirmar a reserva porque estas datas já foram ocupadas: ${formatBlockedDates(
+              blockResult.conflictDates
+            )}`,
+          },
+          { status: 409 }
+        )
+      }
+
+      if (blockResult.errorMessage) {
+        await supabaseAdmin.from('reservas').delete().eq('id', novaReserva.id)
+
+        return NextResponse.json({ error: 'Erro ao bloquear as datas da reserva.' }, { status: 500 })
+      }
+    }
 
     const { data: config } = await supabaseAdmin
       .from('configuracao')
       .select('whatsapp_admin, nome')
       .single()
 
-    const baseUrl      = process.env.NEXT_PUBLIC_APP_URL || 'https://espacofortuna.com.br'
-    const linkConfirmar = `${baseUrl}/confirmar/${token}?chave=${chave}`
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://espacofortuna.com.br'
+    const linkConfirmar = `${baseUrl}/confirmar/${token}`
 
-    const fmtData = (iso: string) => {
-      const [y, m, d] = iso.split('-')
-      return `${d}/${m}/${y}`
-    }
-    const periodo = data_inicio === data_fim
-      ? fmtData(data_inicio)
-      : `${fmtData(data_inicio)} → ${fmtData(data_fim)}`
-
-    const noites = Math.round((fim.getTime() - inicio.getTime()) / 86400000) + 1
+    const periodo =
+      data_inicio === data_fim
+        ? formatDisplayDate(data_inicio)
+        : `${formatDisplayDate(data_inicio)} → ${formatDisplayDate(data_fim)}`
 
     const mensagem = [
       `Olá! Quero reservar o ${config?.nome || 'Espaço Fortuna'}.`,
-      ``,
+      '',
       `*Período:* ${periodo}`,
-      `*Diárias:* ${noites} ${noites === 1 ? 'dia' : 'dias'}`,
+      `*Diárias:* ${dateRange.length} ${dateRange.length === 1 ? 'dia' : 'dias'}`,
       `*Total:* R$ ${valor_total.toLocaleString('pt-BR')}`,
-      ``,
+      '',
       `*Nome:* ${nome}`,
-      email    ? `*E-mail:* ${email}`    : null,
+      email ? `*E-mail:* ${email}` : null,
       telefone ? `*WhatsApp:* ${telefone}` : null,
-      ``,
+      '',
       `*Link de confirmação:* ${linkConfirmar}`,
-    ].filter(Boolean).join('\n')
+    ]
+      .filter(Boolean)
+      .join('\n')
 
     const whatsappUrl = `https://wa.me/${config?.whatsapp_admin}?text=${encodeURIComponent(mensagem)}`
 
     return NextResponse.json({
-      ok:          true,
+      ok: true,
       token,
       valor_total,
       whatsapp_url: whatsappUrl,
+      reserva: novaReserva,
     })
-
   } catch (err) {
     console.error('[reservas/criar]', err)
     return NextResponse.json(
@@ -208,4 +216,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

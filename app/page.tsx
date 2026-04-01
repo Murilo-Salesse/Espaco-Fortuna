@@ -33,13 +33,6 @@ const PLACEHOLDER_FOTOS = [
   { label: 'Quarto principal', bg: 'linear-gradient(135deg,#7f1d1d,#dc2626)' },
   { label: 'Área externa',     bg: 'linear-gradient(135deg,#064e3b,#059669)' },
 ]
-function agruparEmSlides<T>(fotos: T[]): T[][] {
-  const slides: T[][] = []
-  for (let i = 0; i < fotos.length; i += 3) {
-    slides.push(fotos.slice(i, i + 3))
-  }
-  return slides
-}
 
 function hoje(): string {
   return new Date().toISOString().split('T')[0]
@@ -143,13 +136,17 @@ export default function HomePage() {
   useEffect(() => {
     if (lbIdx === null) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft')  lbPrev()
-      if (e.key === 'ArrowRight') lbNext()
-      if (e.key === 'Escape')     closeLightbox()
+      if (e.key === 'ArrowLeft') {
+        setLbIdx(i => (i === null ? i : (i - 1 + fotosNorm.length) % fotosNorm.length))
+      }
+      if (e.key === 'ArrowRight') {
+        setLbIdx(i => (i === null ? i : (i + 1) % fotosNorm.length))
+      }
+      if (e.key === 'Escape') closeLightbox()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [lbIdx])
+  }, [lbIdx, fotosNorm.length])
 
   function carMove(dir: number) {
     setCarIdx(prev => (prev + dir + totalSlides) % totalSlides)
@@ -269,7 +266,8 @@ export default function HomePage() {
       })
       const data = await res.json()
       if (!res.ok) { showToast(data.error ?? 'Erro ao criar reserva.'); return }
-      window.open(data.whatsapp_url, '_blank')
+      const popup = window.open(data.whatsapp_url, '_blank', 'noopener,noreferrer')
+      if (popup) popup.opener = null
     } catch {
       showToast('Erro de conexão. Tente novamente.')
     } finally {

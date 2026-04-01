@@ -1,12 +1,13 @@
 
 
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { ADMIN_CARGO } from '@/lib/constants'
+import { blockReservationDates, formatDisplayDate, getDateRange } from '@/lib/reservas'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
@@ -23,20 +24,14 @@ export async function POST(
       )
     }
 
-    const { chave } = await request.json()
-
     const { data: reserva, error: erroBusca } = await supabaseAdmin
       .from('reservas')
-      .select('*')
+      .select('id, nome, status, data_inicio, data_fim')
       .eq('token', token)
       .single()
 
     if (erroBusca || !reserva) {
       return NextResponse.json({ error: 'Reserva não encontrada.' }, { status: 404 })
-    }
-
-    if (!chave || chave !== reserva.chave) {
-      return NextResponse.json({ error: 'Chave de segurança inválida.' }, { status: 403 })
     }
 
     if (reserva.status !== 'pendente') {
@@ -46,36 +41,37 @@ export async function POST(
       )
     }
 
+    const dateRange = getDateRange(reserva.data_inicio, reserva.data_fim)
+    if (!dateRange) {
+      return NextResponse.json({ error: 'Período da reserva inválido.' }, { status: 400 })
+    }
+
+    const blockResult = await blockReservationDates(reserva.id, dateRange)
+    if (blockResult.conflictDates.length > 0) {
+      const datas = blockResult.conflictDates.map(formatDisplayDate).join(', ')
+      return NextResponse.json(
+        { error: `Estas datas já foram ocupadas por outra reserva: ${datas}` },
+        { status: 409 }
+      )
+    }
+
+    if (blockResult.errorMessage) {
+      throw new Error(blockResult.errorMessage)
+    }
+
     const { error: erroUpdate } = await supabaseAdmin
       .from('reservas')
       .update({ status: 'confirmada' })
       .eq('id', reserva.id)
 
-    if (erroUpdate) throw erroUpdate
-
-    const datas: { data: string; motivo: string; reserva_id: string }[] = []
-    const inicio = new Date(reserva.data_inicio)
-    const fim    = new Date(reserva.data_fim)
-    const d      = new Date(inicio)
-
-    while (d <= fim) {
-      datas.push({
-        data:       d.toISOString().split('T')[0],
-        motivo:     'reserva_confirmada',
-        reserva_id: reserva.id,
-      })
-      d.setDate(d.getDate() + 1)
+    if (erroUpdate) {
+      await supabaseAdmin.from('datas_bloqueadas').delete().eq('reserva_id', reserva.id)
+      throw erroUpdate
     }
-
-    const { error: erroBloquear } = await supabaseAdmin
-      .from('datas_bloqueadas')
-      .upsert(datas, { onConflict: 'data' }) 
-
-    if (erroBloquear) throw erroBloquear
 
     return NextResponse.json({
       ok:      true,
-      message: `Reserva de ${reserva.nome} confirmada. ${datas.length} data(s) bloqueada(s).`,
+      message: `Reserva de ${reserva.nome} confirmada. ${dateRange.length} data(s) bloqueada(s).`,
     })
 
   } catch (err) {

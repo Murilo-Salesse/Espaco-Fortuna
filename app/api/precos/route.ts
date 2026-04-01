@@ -5,6 +5,8 @@ import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { ADMIN_CARGO } from '@/lib/constants'
 
+const PRECO_TIPOS = new Set(['semana', 'fds', 'feriado'])
+
 export async function GET() {
   const { data, error } = await supabase
     .from('precos')
@@ -21,12 +23,33 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 403 })
 
   const { precos } = await request.json() 
+  if (!Array.isArray(precos) || precos.length === 0) {
+    return NextResponse.json({ error: 'Nenhum preço informado.' }, { status: 400 })
+  }
 
-  for (const p of precos) {
-    await supabaseAdmin
+  const sanitized = precos
+    .map((preco) => ({
+      tipo: typeof preco?.tipo === 'string' ? preco.tipo : '',
+      valor: Number(preco?.valor),
+    }))
+    .filter((preco) => PRECO_TIPOS.has(preco.tipo))
+
+  if (sanitized.length === 0 || sanitized.some((preco) => !Number.isFinite(preco.valor) || preco.valor < 0)) {
+    return NextResponse.json({ error: 'Tabela de preços inválida.' }, { status: 400 })
+  }
+
+  const results = await Promise.all(
+    sanitized.map((preco) =>
+      supabaseAdmin
       .from('precos')
-      .update({ valor: p.valor })
-      .eq('tipo', p.tipo)
+        .update({ valor: preco.valor })
+        .eq('tipo', preco.tipo)
+    )
+  )
+
+  const failed = results.find((result) => result.error)
+  if (failed?.error) {
+    return NextResponse.json({ error: 'Erro ao atualizar preços.' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })
