@@ -6,6 +6,9 @@ interface Configuracao {
   nome: string
   descricao: string
   localizacao: string
+  endereco: string
+  numero: string
+  ponto_referencia: string
   area_m2: number
   capacidade: number
   quartos: number
@@ -640,7 +643,7 @@ export default function HomePage() {
                     </div>
                     <div>
                       <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-0.5">Endereço</div>
-                      <div className="text-sm text-stone-700 font-medium">Rua Anézio Caretta, 284, Parque das Arvores II, Birigui - SP</div>
+                      <div className="text-sm text-stone-700 font-medium">{config?.endereco ? `${config.endereco}${config.numero ? ', ' + config.numero : ''}` : 'Rua Anézio Caretta, 284, Parque das Arvores II, Birigui - SP'}</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -649,12 +652,12 @@ export default function HomePage() {
                     </div>
                     <div>
                       <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-0.5">Ponto de referência</div>
-                      <div className="text-sm text-stone-700 font-medium">Bairro Itapuã · Próximo ao centro</div>
+                      <div className="text-sm text-stone-700 font-medium">{config?.ponto_referencia || 'Bairro Itapuã · Próximo ao centro'}</div>
                     </div>
                   </div>
                 </div>
                 <a
-                  href="https://www.google.com/maps/dir/?api=1&destination=R.+Anézio+Caretta,+284+-+Birigui+-+SP"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(config?.endereco ? `${config.endereco}${config.numero ? ', ' + config.numero : ''}` : 'R. Anézio Caretta, 284, Birigui - SP')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 mt-8 text-xs font-bold uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors"
@@ -671,7 +674,7 @@ export default function HomePage() {
                   loading="lazy" 
                   allowFullScreen 
                   referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps?q=${encodeURIComponent('R. Anézio Caretta, 284, Birigui - SP')}&output=embed`}
+                  src={`https://www.google.com/maps?q=${encodeURIComponent(config?.endereco ? `${config.endereco}${config.numero ? ', ' + config.numero : ''}, ${config.localizacao || ''}` : 'R. Anézio Caretta, 284, Birigui - SP')}&output=embed`}
                 />
               </div>
             </div>

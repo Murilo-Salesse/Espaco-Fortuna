@@ -193,8 +193,6 @@ export async function POST(request: NextRequest) {
       `*Nome:* ${nome}`,
       email ? `*E-mail:* ${email}` : null,
       telefone ? `*WhatsApp:* ${telefone}` : null,
-      '',
-      `*Link de confirmação:* ${linkConfirmar}`,
     ]
       .filter(Boolean)
       .join('\n')

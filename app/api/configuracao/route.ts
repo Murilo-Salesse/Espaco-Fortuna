@@ -7,7 +7,7 @@ import { ADMIN_CARGO } from '@/lib/constants'
 import { normalizeOptionalText, normalizeText } from '@/lib/reservas'
 
 const CONFIG_SELECT =
-  'id, nome, descricao, localizacao, endereco, numero, whatsapp_admin, area_m2, capacidade, quartos, banheiros, vagas, comodidades, fotos'
+  'id, nome, descricao, localizacao, endereco, numero, ponto_referencia, whatsapp_admin, area_m2, capacidade, quartos, banheiros, vagas, comodidades, fotos'
 
 function sanitizeInteger(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
@@ -59,6 +59,7 @@ export async function PUT(request: NextRequest) {
     localizacao: normalizeOptionalText(body.localizacao, 160),
     endereco: normalizeOptionalText(body.endereco, 160),
     numero: normalizeOptionalText(body.numero, 20),
+    ponto_referencia: normalizeOptionalText(body.ponto_referencia, 160),
     whatsapp_admin: normalizeText(body.whatsapp_admin, 24),
     area_m2: sanitizeInteger(body.area_m2),
     capacidade: sanitizeInteger(body.capacidade),

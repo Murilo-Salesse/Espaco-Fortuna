@@ -18,7 +18,7 @@ interface Reserva {
 interface Preco { tipo: string; label: string; valor: number }
 interface Configuracao {
   nome: string; descricao: string; localizacao: string
-  endereco: string; numero: string; whatsapp_admin: string
+  endereco: string; numero: string; ponto_referencia: string; whatsapp_admin: string
   area_m2: number; capacidade: number; quartos: number
   banheiros: number; vagas: number; comodidades: string[]; fotos: string[]
 }
@@ -810,6 +810,7 @@ export default function AdminPage() {
                       { label:'WhatsApp do admin',  key:'whatsapp_admin',  span:'',              type:'tel'  },
                       { label:'Endereço',           key:'endereco',        span:'sm:col-span-2', type:'text' },
                       { label:'Número',             key:'numero',          span:'',              type:'text' },
+                      { label:'Ponto de referência',key:'ponto_referencia',span:'sm:col-span-2', type:'text' },
                     ].map(f => (
                       <div key={f.key} className={f.span}>
                         <label className="block text-xs text-stone-400 mb-1.5">{f.label}</label>
@@ -955,6 +956,58 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs text-stone-400 mb-1.5">Nome do Cliente *</label>
+                <input
+                  type="text"
+                  value={editModal.nome ?? ''}
+                  onChange={e => setEditModal(p => p ? { ...p, nome: e.target.value } : null)}
+                  className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">E-mail</label>
+                  <input
+                    type="email"
+                    value={editModal.email ?? ''}
+                    onChange={e => setEditModal(p => p ? { ...p, email: e.target.value } : null)}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Telefone</label>
+                  <input
+                    type="tel"
+                    value={editModal.telefone ?? ''}
+                    onChange={e => setEditModal(p => p ? { ...p, telefone: e.target.value } : null)}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Data Início *</label>
+                  <input
+                    type="date"
+                    value={editModal.data_inicio ?? ''}
+                    onChange={e => setEditModal(p => p ? { ...p, data_inicio: e.target.value } : null)}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Data Fim *</label>
+                  <input
+                    type="date"
+                    value={editModal.data_fim ?? ''}
+                    onChange={e => setEditModal(p => p ? { ...p, data_fim: e.target.value } : null)}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-stone-400 mb-1.5">Contrato</label>
@@ -988,6 +1041,18 @@ export default function AdminPage() {
                     onChange={e => {
                       const v = Number(e.target.value)
                       setEditModal(p => p ? { ...p, valor_pago: v, saldo: (p.valor_total || 0) - v } : null)
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Valor Total (R$)</label>
+                  <input
+                    type="number"
+                    value={editModal.valor_total ?? 0}
+                    onChange={e => {
+                      const v = Number(e.target.value)
+                      setEditModal(p => p ? { ...p, valor_total: v, saldo: v - (p.valor_pago || 0) } : null)
                     }}
                     className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
                   />
@@ -1113,6 +1178,18 @@ export default function AdminPage() {
                     type="number"
                     value={novaReserva.valor_pago ?? 0}
                     onChange={e => setNovaReserva(p => ({ ...p, valor_pago: Number(e.target.value) }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pb-2 border-b border-stone-100">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Valor Total (R$)</label>
+                  <input
+                    type="number"
+                    value={novaReserva.valor_total || ''}
+                    onChange={e => setNovaReserva(p => ({ ...p, valor_total: e.target.value ? Number(e.target.value) : undefined }))}
                     className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
                   />
                 </div>
