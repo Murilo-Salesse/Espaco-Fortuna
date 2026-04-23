@@ -642,7 +642,7 @@ export default function HomePage() {
                       <svg width="14" height="14" fill="none" stroke="#78716c" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-0.5">Endereço</div>
+                      <div className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-0.5">Endereço</div>
                       <div className="text-sm text-stone-700 font-medium">{config?.endereco ? `${config.endereco}${config.numero ? ', ' + config.numero : ''}` : 'Rua Anézio Caretta, 284, Parque das Arvores II, Birigui - SP'}</div>
                     </div>
                   </div>
