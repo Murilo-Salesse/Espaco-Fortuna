@@ -311,8 +311,8 @@ export default function HomePage() {
                 Locação exclusiva · {config?.localizacao ?? 'Salto, SP'}
               </span>
               <h1 className="font-serif text-5xl md:text-6xl text-white leading-tight mb-5 reveal-l">
-                Seu evento,<br />
-                <em className="not-italic text-green-400">espaço completo.</em>
+                O espaço perfeito<br />
+                <em className="not-italic text-green-400">para o seu evento</em>
               </h1>
               <p className="text-green-100/80 text-base leading-relaxed mb-8 reveal-l" style={{ animationDelay: '0.1s' }}>
                 {config?.descricao ?? 'Espaço de lazer privativo com piscina, churrasqueira e muito conforto.'}
