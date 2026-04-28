@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { ADMIN_CARGO } from '@/lib/constants'
+import { MAX_FOTOS } from '@/lib/fotos'
 import { normalizeOptionalText, normalizeText } from '@/lib/reservas'
 
 const CONFIG_SELECT =
@@ -34,7 +35,7 @@ function sanitizePhotoUrls(value: unknown): string[] {
     .filter((item): item is string => typeof item === 'string')
     .map((item) => item.trim())
     .filter((item) => item.startsWith('https://'))
-    .slice(0, 30)
+    .slice(0, MAX_FOTOS)
 }
 
 export async function GET() {

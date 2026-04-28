@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { MAX_FOTOS } from '@/lib/fotos';
 import { getPrecoConfig, type Preco } from '@/lib/precos';
 
 type Tab = 'dashboard' | 'reservas' | 'calendario' | 'fotos' | 'precos' | 'detalhes'
@@ -126,9 +127,9 @@ export default function AdminPage() {
     const arr = Array.from(files).filter(f => f.type.startsWith('image/'))
     if (!arr.length) return
 
-    const disponiveis = 30 - fotos.length - pendingFiles.length
+    const disponiveis = MAX_FOTOS - fotos.length - pendingFiles.length
     const novos = arr.slice(0, disponiveis)
-    if (!novos.length) { showToast('Limite de 30 fotos atingido!'); return }
+    if (!novos.length) { showToast(`Limite de ${MAX_FOTOS} fotos atingido!`); return }
 
     const urls = novos.map(f => URL.createObjectURL(f))
     setPendingFiles(prev => [...prev, ...novos])
@@ -639,7 +640,7 @@ export default function AdminPage() {
                 <div>
                   <h1 className="text-xl md:text-2xl font-serif text-stone-900">Fotos</h1>
                   <p className="text-stone-400 text-sm mt-1">
-                    {fotos.length} de 30 fotos cadastradas
+                    {fotos.length} de {MAX_FOTOS} fotos cadastradas
                     {pendingFiles.length > 0 && <span className="text-amber-600 ml-2">· {pendingFiles.length} aguardando envio</span>}
                   </p>
                 </div>
@@ -661,7 +662,7 @@ export default function AdminPage() {
 
               <div className="bg-white border border-stone-200 rounded-2xl p-4 md:p-6 space-y-6">
 
-                {fotos.length < 30 && (
+                {fotos.length < MAX_FOTOS && (
                   <div>
                     <input
                       ref={fileInputRef}
@@ -687,7 +688,7 @@ export default function AdminPage() {
                       <p className="text-sm text-stone-400 mb-1">
                         {isDragging ? 'Solte as fotos aqui' : <>Arraste as fotos ou <span className="text-green-600">clique para selecionar</span></>}
                       </p>
-                      <p className="text-xs text-stone-300">JPG, PNG · Máx 5MB · Até {30 - fotos.length} foto(s)</p>
+                      <p className="text-xs text-stone-300">JPG, PNG · Máx 5MB · Até {MAX_FOTOS - fotos.length} foto(s)</p>
                     </div>
                   </div>
                 )}
@@ -752,7 +753,7 @@ export default function AdminPage() {
                           </div>
                         </div>
                       ))}
-                      {fotos.length < 30 && (
+                      {fotos.length < MAX_FOTOS && (
                         <div
                           onClick={() => fileInputRef.current?.click()}
                           className="aspect-video border-2 border-dashed border-stone-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-green-400 hover:bg-green-50 transition-all gap-1"

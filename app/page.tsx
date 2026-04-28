@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { MAX_FOTOS } from '@/lib/fotos'
 import { getPrecoConfig, getPrecoTipo, type Preco } from '@/lib/precos'
 
 interface Configuracao {
@@ -94,7 +95,7 @@ export default function HomePage() {
       })
   }, [mesSelecionado])
 
-  const fotosReais: string[] = config?.fotos?.length ? config.fotos.slice(0, 30) : []
+  const fotosReais: string[] = config?.fotos?.length ? config.fotos.slice(0, MAX_FOTOS) : []
   const usandoPlaceholder = fotosReais.length === 0
 
   type FotoNorm = { url?: string; bg?: string; label: string }

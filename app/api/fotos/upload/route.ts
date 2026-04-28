@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { ADMIN_CARGO } from '@/lib/constants'
+import { MAX_FOTOS } from '@/lib/fotos'
 import { consumeRateLimit } from '@/lib/rate-limit'
 import { getClientIp } from '@/lib/security'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
     const uploadLimit = await consumeRateLimit({
       namespace: 'upload:fotos',
       identifier: `${session.id}:${getClientIp(req.headers)}`,
-      limit: 20,
+      limit: MAX_FOTOS,
       windowSeconds: 10 * 60,
       blockSeconds: 10 * 60,
     })
