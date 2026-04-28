@@ -95,7 +95,7 @@ export async function calculateReservationTotal(dateRange: string[]): Promise<nu
     const date = parseIsoDate(isoDate)
     if (!date) return total
 
-    const tipo = getPrecoTipo(date.getUTCMonth(), date.getUTCDay())
+    const tipo = getPrecoTipo(date.getUTCMonth(), date.getUTCDay(), date.getUTCDate())
     const fallback = getPrecoConfig(tipo)?.fallback ?? 0
 
     return total + (precoMap[tipo] || fallback)

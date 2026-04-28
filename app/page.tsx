@@ -49,7 +49,7 @@ const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 function tipoDia(date: Date, precos: Preco[]): Preco {
-  const tipo = getPrecoTipo(date.getMonth(), date.getDay())
+  const tipo = getPrecoTipo(date.getMonth(), date.getDay(), date.getDate())
   const config = getPrecoConfig(tipo)
   return precos.find(p => p.tipo === tipo) ?? { tipo, label: config?.label ?? tipo, valor: config?.fallback ?? 0 }
 }
@@ -455,7 +455,7 @@ export default function HomePage() {
             <div id="precos">
               <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-4">Valores por diária</p>
               <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
-                <div className="flex flex-col md:grid md:grid-cols-4 divide-y divide-stone-100 md:divide-y-0 md:divide-x">
+                <div className="flex flex-col md:grid md:grid-cols-5 divide-y divide-stone-100 md:divide-y-0 md:divide-x">
                   {precos.map(p => (
                     <div key={p.tipo} className="flex md:block items-center justify-between px-6 py-4 md:py-5">
                       <div>

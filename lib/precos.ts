@@ -12,6 +12,12 @@ export const PRECO_CONFIGS = [
     fallback: 600,
   },
   {
+    tipo: 'feriado',
+    label: 'Feriados',
+    descricao: 'Feriados oficiais',
+    fallback: 800,
+  },
+  {
     tipo: 'dezembro',
     label: 'Dezembro',
     descricao: 'Mês de dezembro',
@@ -29,6 +35,7 @@ export type PrecoTipo = (typeof PRECO_CONFIGS)[number]['tipo']
 export type Preco = { tipo: PrecoTipo; label: string; valor: number }
 
 export const PRECO_TIPOS = new Set<string>(PRECO_CONFIGS.map((preco) => preco.tipo))
+export const FERIADOS_BR = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '12-25']
 
 export function getPrecoConfig(tipo: string) {
   return PRECO_CONFIGS.find((preco) => preco.tipo === tipo)
@@ -49,7 +56,12 @@ export function mergePrecos(
   })
 }
 
-export function getPrecoTipo(monthIndex: number, dayOfWeek: number): PrecoTipo {
+export function getPrecoTipo(monthIndex: number, dayOfWeek: number, dayOfMonth?: number): PrecoTipo {
+  if (dayOfMonth) {
+    const monthDay = `${String(monthIndex + 1).padStart(2, '0')}-${String(dayOfMonth).padStart(2, '0')}`
+    if (FERIADOS_BR.includes(monthDay)) return 'feriado'
+  }
+
   if (monthIndex === 0) return 'janeiro'
   if (monthIndex === 11) return 'dezembro'
   if (dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6) return 'fds'
