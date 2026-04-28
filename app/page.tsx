@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { getPrecoConfig, getPrecoTipo, type Preco } from '@/lib/precos'
 
 interface Configuracao {
   nome: string
@@ -15,12 +16,6 @@ interface Configuracao {
   banheiros: number
   comodidades: string[]
   fotos: string[]
-}
-
-interface Preco {
-  tipo: string
-  label: string
-  valor: number
 }
 
 interface DiaStatus {
@@ -52,15 +47,11 @@ function dateParaIso(d: Date): string {
 
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-const FERIADOS_BR = ['01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25']
 
 function tipoDia(date: Date, precos: Preco[]): Preco {
-  const diaSemana = date.getDay()
-  const mesdia = `${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
-  const isFeriado = FERIADOS_BR.includes(mesdia)
-  const isFds = diaSemana === 0 || diaSemana === 6
-  const tipo = isFeriado ? 'feriado' : isFds ? 'fds' : 'semana'
-  return precos.find(p => p.tipo === tipo) ?? { tipo, label: tipo, valor: 0 }
+  const tipo = getPrecoTipo(date.getMonth(), date.getDay())
+  const config = getPrecoConfig(tipo)
+  return precos.find(p => p.tipo === tipo) ?? { tipo, label: config?.label ?? tipo, valor: config?.fallback ?? 0 }
 }
 
 export default function HomePage() {
@@ -464,12 +455,12 @@ export default function HomePage() {
             <div id="precos">
               <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-4">Valores por diária</p>
               <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
-                <div className="flex flex-col md:grid md:grid-cols-3 divide-y divide-stone-100 md:divide-y-0 md:divide-x">
+                <div className="flex flex-col md:grid md:grid-cols-4 divide-y divide-stone-100 md:divide-y-0 md:divide-x">
                   {precos.map(p => (
                     <div key={p.tipo} className="flex md:block items-center justify-between px-6 py-4 md:py-5">
                       <div>
                         <div className="text-xs text-stone-400 mb-0.5">{p.label}</div>
-                        <div className="text-xs text-stone-300">{p.tipo === 'semana' ? 'Segunda a Sexta' : p.tipo === 'fds' ? 'Sábado ou Domingo' : 'Nacional'}</div>
+                        <div className="text-xs text-stone-300">{getPrecoConfig(p.tipo)?.descricao}</div>
                       </div>
                       <div className="text-2xl font-light text-stone-900 md:mt-3">
                         R$ {Number(p.valor).toLocaleString('pt-BR')}

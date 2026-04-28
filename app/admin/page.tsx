@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getPrecoConfig, type Preco } from '@/lib/precos';
 
 type Tab = 'dashboard' | 'reservas' | 'calendario' | 'fotos' | 'precos' | 'detalhes'
 
@@ -15,7 +16,6 @@ interface Reserva {
   saldo?: number;
   pgto_detalhes?: string;
 }
-interface Preco { tipo: string; label: string; valor: number }
 interface Configuracao {
   nome: string; descricao: string; localizacao: string
   endereco: string; numero: string; ponto_referencia: string; whatsapp_admin: string
@@ -777,7 +777,7 @@ export default function AdminPage() {
                   <div key={p.tipo} className="px-4 md:px-6 py-5 flex items-center justify-between gap-4">
                     <div>
                       <div className="text-sm font-medium text-stone-800">{p.label}</div>
-                      <div className="text-xs text-stone-400 mt-0.5">{p.tipo === 'semana' ? 'Segunda a Sexta-feira' : p.tipo === 'fds' ? 'Sábado e Domingo' : 'Feriados oficiais'}</div>
+                      <div className="text-xs text-stone-400 mt-0.5">{getPrecoConfig(p.tipo)?.descricao}</div>
                     </div>
                     <div className="flex items-center gap-2 flex-none">
                       <span className="text-xs text-stone-400">R$</span>

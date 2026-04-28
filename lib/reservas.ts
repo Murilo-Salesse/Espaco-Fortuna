@@ -1,10 +1,9 @@
 import { supabaseAdmin } from './supabase'
 import { isIsoDateString } from './security'
+import { getPrecoConfig, getPrecoTipo } from './precos'
 
 export const RESERVA_STATUS = ['pendente', 'confirmada', 'cancelada'] as const
 export const MAX_RESERVA_DAYS = 31
-
-const FERIADOS_BR = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '12-25']
 
 export type ReservaStatus = (typeof RESERVA_STATUS)[number]
 
@@ -96,17 +95,10 @@ export async function calculateReservationTotal(dateRange: string[]): Promise<nu
     const date = parseIsoDate(isoDate)
     if (!date) return total
 
-    const dayOfWeek = date.getUTCDay()
-    const monthDay = `${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(
-      date.getUTCDate()
-    ).padStart(2, '0')}`
-    const isHoliday = FERIADOS_BR.includes(monthDay)
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    const tipo = getPrecoTipo(date.getUTCMonth(), date.getUTCDay())
+    const fallback = getPrecoConfig(tipo)?.fallback ?? 0
 
-    if (isHoliday) return total + (precoMap.feriado || 800)
-    if (isWeekend) return total + (precoMap.fds || 600)
-
-    return total + (precoMap.semana || 350)
+    return total + (precoMap[tipo] || fallback)
   }, 0)
 }
 

@@ -4,8 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/auth'
 import { ADMIN_CARGO } from '@/lib/constants'
-
-const PRECO_TIPOS = new Set(['semana', 'fds', 'feriado'])
+import { getPrecoConfig, mergePrecos, PRECO_TIPOS } from '@/lib/precos'
 
 export async function GET() {
   const { data, error } = await supabase
@@ -14,7 +13,7 @@ export async function GET() {
     .order('tipo')
 
   if (error) return NextResponse.json({ error: 'Erro ao buscar preços.' }, { status: 500 })
-  return NextResponse.json({ precos: data })
+  return NextResponse.json({ precos: mergePrecos(data ?? []) })
 }
 
 export async function PUT(request: NextRequest) {
@@ -30,6 +29,7 @@ export async function PUT(request: NextRequest) {
   const sanitized = precos
     .map((preco) => ({
       tipo: typeof preco?.tipo === 'string' ? preco.tipo : '',
+      label: typeof preco?.tipo === 'string' ? getPrecoConfig(preco.tipo)?.label : undefined,
       valor: Number(preco?.valor),
     }))
     .filter((preco) => PRECO_TIPOS.has(preco.tipo))
@@ -42,8 +42,7 @@ export async function PUT(request: NextRequest) {
     sanitized.map((preco) =>
       supabaseAdmin
       .from('precos')
-        .update({ valor: preco.valor })
-        .eq('tipo', preco.tipo)
+        .upsert({ tipo: preco.tipo, label: preco.label, valor: preco.valor }, { onConflict: 'tipo' })
     )
   )
 
