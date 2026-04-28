@@ -306,7 +306,7 @@ export default function HomePage() {
         <section className="hero-gradient relative overflow-hidden">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1' fill='white'/%3E%3C/svg%3E\")", backgroundSize: '40px 40px' }} />
           <div className="max-w-7xl mx-auto px-8 pt-16 pb-0">
-            <div className="max-w-2xl mb-12">
+            <div className="relative z-10 max-w-2xl mb-12">
               <span className="inline-block text-green-200 text-xs font-medium tracking-widest uppercase mb-4">
                 Locação exclusiva · {config?.localizacao ?? 'Salto, SP'}
               </span>
@@ -321,7 +321,7 @@ export default function HomePage() {
                 <a href="#calendario" className="inline-flex items-center gap-2 bg-white text-green-700 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors shadow-sm">
                   Ver datas disponíveis <span className="text-xs">↓</span>
                 </a>
-                <a href="/modelo-contrato.docx" download className="inline-flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium px-4 py-2.5 transition-colors">
+                <a href="/modelo-contrato.docx" download="modelo-contrato.docx" className="inline-flex items-center gap-2 bg-green-500/20 text-white hover:bg-green-500/30 hover:text-white text-sm font-medium px-5 py-2.5 rounded-full border border-green-200/30 backdrop-blur-sm transition-colors">
                   <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
                   Contrato de Exemplo
                 </a>
@@ -564,7 +564,7 @@ export default function HomePage() {
               <p className="text-stone-400 text-sm mb-4">Preencha e clique em confirmar. O resumo vai direto para o WhatsApp.</p>
 
               <div className="mb-8">
-                <a href="/modelo-contrato.docx" download className="inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors bg-stone-50 hover:bg-stone-100 px-4 py-2 rounded-xl border border-stone-200">
+                <a href="/modelo-contrato.docx" download="modelo-contrato.docx" className="inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 text-sm font-medium transition-colors bg-stone-50 hover:bg-stone-100 px-4 py-2 rounded-xl border border-stone-200">
                   <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
                   Ver contrato de exemplo
                 </a>
