@@ -25,12 +25,12 @@ interface DiaStatus {
 }
 
 const PLACEHOLDER_FOTOS = [
-  { label: 'Área da piscina',  bg: 'linear-gradient(135deg,#064e3b,#1D9E75)' },
+  { label: 'Área da piscina',  bg: 'linear-gradient(135deg,#3f2f23,#a77f52)' },
   { label: 'Churrasqueira',    bg: 'linear-gradient(135deg,#7c3f00,#d97706)' },
   { label: 'Área de lazer',    bg: 'linear-gradient(135deg,#1e3a5f,#3b82f6)' },
   { label: 'Sala principal',   bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)' },
   { label: 'Quarto principal', bg: 'linear-gradient(135deg,#7f1d1d,#dc2626)' },
-  { label: 'Área externa',     bg: 'linear-gradient(135deg,#064e3b,#059669)' },
+  { label: 'Área externa',     bg: 'linear-gradient(135deg,#3f2f23,#7f5d3d)' },
 ]
 
 function hoje(): string {

@@ -186,7 +186,7 @@ export default function ConfirmarPage() {
             <div className="fade-up">
               <div className="text-center mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center mx-auto mb-4">
-                  <svg width="22" height="22" fill="none" stroke="#0F6E56" strokeWidth="1.5" viewBox="0 0 24 24">
+                  <svg width="22" height="22" fill="none" stroke="#60462f" strokeWidth="1.5" viewBox="0 0 24 24">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
                   </svg>
                 </div>
@@ -254,7 +254,7 @@ export default function ConfirmarPage() {
           {estado === 'sucesso' && reserva && (
             <div className="text-center py-10 scale-in">
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5">
-                <svg width="28" height="28" fill="none" stroke="#0F6E56" strokeWidth="2" viewBox="0 0 24 24">
+                <svg width="28" height="28" fill="none" stroke="#60462f" strokeWidth="2" viewBox="0 0 24 24">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </div>

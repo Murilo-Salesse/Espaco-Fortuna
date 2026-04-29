@@ -24,7 +24,7 @@
 
 /* Hero */
 .hero-gradient {
-  background: linear-gradient(160deg, #0a2e22 0%, #0F6E56 40%, #1D9E75 100%);
+  background: linear-gradient(160deg, #17120e 0%, #3f2f23 42%, #7f5d3d 100%);
 }
 
 /* Carousel */
@@ -37,11 +37,11 @@
 
 /* Calendar */
 .cal-day { cursor: pointer; transition: all 0.12s; border-radius: 8px; }
-.cal-day:hover:not(.blocked):not(.past) { background: #d6f2e4; color: #0F6E56; }
-.cal-day.selected    { background: #1D9E75 !important; color: #fff !important; font-weight: 500; }
-.cal-day.in-range    { background: #d6f2e4; color: #0F6E56; border-radius: 0; }
-.cal-day.range-start { background: #1D9E75 !important; color: #fff !important; font-weight: 500; border-radius: 8px 0 0 8px; }
-.cal-day.range-end   { background: #1D9E75 !important; color: #fff !important; font-weight: 500; border-radius: 0 8px 8px 0; }
+.cal-day:hover:not(.blocked):not(.past) { background: #e8dfd1; color: #60462f; }
+.cal-day.selected    { background: #a77f52 !important; color: #fff !important; font-weight: 500; }
+.cal-day.in-range    { background: #e8dfd1; color: #60462f; border-radius: 0; }
+.cal-day.range-start { background: #a77f52 !important; color: #fff !important; font-weight: 500; border-radius: 8px 0 0 8px; }
+.cal-day.range-end   { background: #a77f52 !important; color: #fff !important; font-weight: 500; border-radius: 0 8px 8px 0; }
 .cal-day.range-start.range-end { border-radius: 8px; }
 .cal-day.blocked { color: #d6d3d1; text-decoration: line-through; cursor: default; }
 .cal-day.past    { color: #d6d3d1; cursor: default; }
@@ -54,11 +54,11 @@
 /* ADM sidebar */
 .sidebar-item { transition: all 0.15s; }
 .sidebar-item:hover { background: #f5f5f4; }
-.sidebar-item.active { background: #f0faf5; color: #0F6E56; font-weight: 500; }
+.sidebar-item.active { background: #fbf8f2; color: #60462f; font-weight: 500; }
 
 /* ADM calendar */
 .adm-cal-day { cursor: pointer; transition: all 0.12s; border-radius: 8px; user-select: none; }
-.adm-cal-day:hover:not(.adm-past):not(.adm-reserved):not(.adm-holiday) { background: #d6f2e4; color: #0F6E56; }
+.adm-cal-day:hover:not(.adm-past):not(.adm-reserved):not(.adm-holiday) { background: #e8dfd1; color: #60462f; }
 .adm-cal-day.adm-blocked { background: #fee2e2; color: #991b1b; }
 .adm-cal-day.adm-blocked:hover { background: #fecaca; }
 .adm-cal-day.adm-holiday  { background: #fef3c7; color: #92400e; cursor: default; }
@@ -75,7 +75,7 @@
 /* Bottom nav */
 #bottomNav { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: white; border-top: 0.5px solid #e7e5e4; z-index: 100; }
 .bnav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #a8a29e; font-size: 9px; font-weight: 500; background: transparent; border: none; cursor: pointer; padding: 6px 2px; transition: color 0.15s; position: relative; }
-.bnav-btn.active { color: #1D9E75; }
+.bnav-btn.active { color: #a77f52; }
 .bnav-badge { position: absolute; top: 6px; right: calc(50% - 14px); width: 14px; height: 14px; background: #f59e0b; color: white; border-radius: 50%; font-size: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
 
 /* Animations */
@@ -102,7 +102,7 @@
 
 /* Drag zone (fotos) */
 .drag-zone { border: 1.5px dashed #d6d3d1; transition: all 0.2s; }
-.drag-zone:hover { border-color: #1D9E75; background: #f0faf5; }
+.drag-zone:hover { border-color: #a77f52; background: #fbf8f2; }
 
 /* Toast */
 .toast { position: fixed; bottom: 80px; right: 16px; transform: translateY(80px); transition: transform 0.3s, opacity 0.3s; opacity: 0; z-index: 200; }
