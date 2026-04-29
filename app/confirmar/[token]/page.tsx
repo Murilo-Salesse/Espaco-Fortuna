@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -136,7 +137,10 @@ export default function ConfirmarPage() {
 
       {}
       <header className="bg-white border-b border-stone-200 h-14 flex items-center justify-between px-6">
-        <Link href="/" className="font-serif text-lg">Fortuna<span className="text-green-500">.</span></Link>
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/logo-fortuna.jpg" alt="Espaco Fortuna" width={40} height={40} className="h-9 w-9 rounded-md object-cover" priority />
+          <span className="font-serif text-lg">Fortuna<span className="text-green-500">.</span></span>
+        </Link>
         {session && (
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-medium flex items-center justify-center">
