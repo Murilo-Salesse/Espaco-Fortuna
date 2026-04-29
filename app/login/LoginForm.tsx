@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
@@ -45,8 +46,11 @@ export default function LoginForm() {
   return (
     <div className="font-sans min-h-screen bg-stone-50 flex flex-col">
       <header className="bg-white border-b border-stone-200 h-14 flex items-center px-6">
-        <Link href="/" className="font-serif text-lg">
-          Fortuna<span className="text-green-500">.</span>
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/logo-fortuna.jpg" alt="Espaco Fortuna" width={40} height={40} className="h-9 w-9 rounded-md object-cover" priority />
+          <span className="font-serif text-lg">
+            Fortuna<span className="text-green-500">.</span>
+          </span>
         </Link>
       </header>
 

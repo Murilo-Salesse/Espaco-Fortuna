@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { MAX_FOTOS } from '@/lib/fotos'
 import { getPrecoConfig, getPrecoTipo, type Preco } from '@/lib/precos'
@@ -25,12 +26,12 @@ interface DiaStatus {
 }
 
 const PLACEHOLDER_FOTOS = [
-  { label: 'Área da piscina',  bg: 'linear-gradient(135deg,#064e3b,#1D9E75)' },
+  { label: 'Área da piscina',  bg: 'linear-gradient(135deg,#3f2f23,#a77f52)' },
   { label: 'Churrasqueira',    bg: 'linear-gradient(135deg,#7c3f00,#d97706)' },
   { label: 'Área de lazer',    bg: 'linear-gradient(135deg,#1e3a5f,#3b82f6)' },
   { label: 'Sala principal',   bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)' },
   { label: 'Quarto principal', bg: 'linear-gradient(135deg,#7f1d1d,#dc2626)' },
-  { label: 'Área externa',     bg: 'linear-gradient(135deg,#064e3b,#059669)' },
+  { label: 'Área externa',     bg: 'linear-gradient(135deg,#3f2f23,#7f5d3d)' },
 ]
 
 function hoje(): string {
@@ -289,9 +290,12 @@ export default function HomePage() {
     <div className="font-sans text-stone-800 min-h-screen bg-stone-100">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-stone-200">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="font-serif text-lg tracking-tight">
-            {config?.nome ?? 'Fortuna'}<span className="text-green-500">.</span>
-          </span>
+          <a href="/" className="flex items-center gap-2">
+            <Image src="/logo-fortuna.jpg" alt="Espaco Fortuna" width={40} height={40} className="h-9 w-9 rounded-md object-cover" priority />
+            <span className="font-serif text-lg tracking-tight">
+              {config?.nome ?? 'Fortuna'}<span className="text-green-500">.</span>
+            </span>
+          </a>
           <nav className="hidden md:flex items-center gap-6 text-sm text-stone-500">
             <a href="#sobre"      className="hover:text-stone-800 transition-colors">O espaço</a>
             <a href="#calendario" className="hover:text-stone-800 transition-colors">Disponibilidade</a>
@@ -308,6 +312,7 @@ export default function HomePage() {
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1' fill='white'/%3E%3C/svg%3E\")", backgroundSize: '40px 40px' }} />
           <div className="max-w-7xl mx-auto px-8 pt-16 pb-0">
             <div className="relative z-10 max-w-2xl mb-12">
+              <Image src="/logo-fortuna.jpg" alt="Espaco Fortuna" width={180} height={180} className="mb-6 h-28 w-28 md:h-36 md:w-36 rounded-2xl object-cover shadow-2xl shadow-black/25 reveal-l" priority />
               <span className="inline-block text-green-200 text-xs font-medium tracking-widest uppercase mb-4">
                 Locação exclusiva · {config?.localizacao ?? 'Salto, SP'}
               </span>
@@ -676,7 +681,10 @@ export default function HomePage() {
         <footer className="bg-stone-900 text-stone-400">
 
           <div className="max-w-5xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
-            <span className="font-serif text-white text-lg">{config?.nome ?? 'Fortuna'}<span className="text-green-400">.</span></span>
+            <span className="flex items-center gap-2">
+              <Image src="/logo-fortuna.jpg" alt="Espaco Fortuna" width={40} height={40} className="h-9 w-9 rounded-md object-cover" />
+              <span className="font-serif text-white text-lg">{config?.nome ?? 'Fortuna'}<span className="text-green-400">.</span></span>
+            </span>
             <p className="text-xs">{config?.localizacao} · Locação exclusiva · © {new Date().getFullYear()}</p>
           </div>
         </footer>
