@@ -503,7 +503,9 @@ export default function AdminPage() {
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <div className="text-sm font-medium text-stone-800">{r.nome}</div>
-                        <div className="text-xs text-stone-400 mt-0.5">{[r.email, r.telefone, r.cpf].filter(Boolean).join(' · ')}</div>
+                        {r.telefone && <div className="text-xs text-stone-400 mt-0.5">{r.telefone}</div>}
+                        {r.cpf && <div className="text-xs text-stone-400">CPF: {r.cpf}</div>}
+                        {r.email && <div className="text-xs text-stone-400">{r.email}</div>}
                       </div>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-none ${r.status === 'confirmada' ? 'bg-green-100 text-green-700' : r.status === 'pendente' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-400'}`}>{r.status}</span>
                     </div>
@@ -543,7 +545,9 @@ export default function AdminPage() {
                       <tr key={r.id} className={r.status === 'cancelada' ? 'opacity-50' : ''}>
                         <td className="px-6 py-4">
                           <div className="font-medium text-stone-800">{r.nome}</div>
-                          <div className="text-[10px] text-stone-400">{[r.email, r.telefone, r.cpf].filter(Boolean).join(' · ')}</div>
+                          {r.telefone && <div className="text-[10px] text-stone-400">{r.telefone}</div>}
+                          {r.cpf && <div className="text-[10px] text-stone-400">CPF: {r.cpf}</div>}
+                          {r.email && <div className="text-[10px] text-stone-400">{r.email}</div>}
                           {r.endereco_cliente && <div className="text-[10px] text-stone-400 mt-0.5">{r.endereco_cliente}</div>}
                         </td>
                         <td className="px-4 py-4 text-xs text-stone-500">
@@ -994,14 +998,25 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs text-stone-400 mb-1.5">Endereço completo</label>
-                <input
-                  type="text"
-                  value={editModal.endereco_cliente ?? ''}
-                  onChange={e => setEditModal(p => p ? { ...p, endereco_cliente: e.target.value } : null)}
-                  className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">CPF</label>
+                  <input
+                    type="text"
+                    value={editModal.cpf ?? ''}
+                    onChange={e => setEditModal(p => p ? { ...p, cpf: e.target.value } : null)}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Endereço completo</label>
+                  <input
+                    type="text"
+                    value={editModal.endereco_cliente ?? ''}
+                    onChange={e => setEditModal(p => p ? { ...p, endereco_cliente: e.target.value } : null)}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
