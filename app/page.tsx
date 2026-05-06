@@ -73,6 +73,8 @@ export default function HomePage() {
   const [nome, setNome]         = useState('')
   const [email, setEmail]       = useState('')
   const [telefone, setTelefone] = useState('')
+  const [cpf, setCpf]           = useState('')
+  const [enderecoCliente, setEnderecoCliente] = useState('')
 
   const [enviando, setEnviando] = useState(false)
   const [toast, setToast]       = useState<string | null>(null)
@@ -244,8 +246,10 @@ export default function HomePage() {
   }
 
   async function handleReservar() {
-    if (!nome.trim())  { showToast('Preencha seu nome!');  return }
-    if (!rangeStart)   { showToast('Selecione uma data!'); return }
+    if (!nome.trim())             { showToast('Preencha seu nome!'); return }
+    if (!cpf.trim())              { showToast('Preencha seu CPF!'); return }
+    if (!enderecoCliente.trim())  { showToast('Preencha seu endereço!'); return }
+    if (!rangeStart)              { showToast('Selecione uma data!'); return }
 
     setEnviando(true)
     try {
@@ -256,6 +260,8 @@ export default function HomePage() {
           nome:        nome.trim(),
           email:       email.trim() || null,
           telefone:    telefone.trim() || null,
+          cpf:         cpf.trim(),
+          endereco:    enderecoCliente.trim(),
           data_inicio: dateParaIso(rangeStart),
           data_fim:    dateParaIso(rangeEnd ?? rangeStart),
         }),
@@ -579,8 +585,10 @@ export default function HomePage() {
               <div className="space-y-4">
                 {[
                   { label:'Nome completo', type:'text',  value:nome,     onChange:setNome,     placeholder:'João Silva'      },
+                  { label:'CPF',           type:'text',  value:cpf,      onChange:setCpf,      placeholder:'000.000.000-00' },
                   { label:'E-mail',        type:'email', value:email,    onChange:setEmail,    placeholder:'joao@email.com'  },
                   { label:'WhatsApp',      type:'tel',   value:telefone, onChange:setTelefone, placeholder:'(11) 99999-0000' },
+                  { label:'Endereço completo', type:'text', value:enderecoCliente, onChange:setEnderecoCliente, placeholder:'Rua, número, bairro e cidade' },
                 ].map(field => (
                   <div key={field.label}>
                     <label className="block text-xs font-medium text-stone-500 mb-1.5">{field.label}</label>

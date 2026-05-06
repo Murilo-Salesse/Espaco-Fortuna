@@ -13,6 +13,8 @@ interface Reserva {
   nome: string
   email: string
   telefone: string
+  cpf?: string
+  endereco_cliente?: string
   data_inicio: string
   data_fim: string
   valor_total: number
@@ -206,11 +208,13 @@ export default function ConfirmarPage() {
                 <div className="divide-y divide-stone-100">
                   {[
                     ['Cliente',   reserva.nome],
+                    ['CPF',       reserva.cpf],
+                    ['Endereço',  reserva.endereco_cliente],
                     ['WhatsApp',  reserva.telefone],
                     ['E-mail',    reserva.email],
                     ['Período',   periodo(reserva.data_inicio, reserva.data_fim)],
                     ['Diárias',   `${diffDias(reserva.data_inicio, reserva.data_fim)} ${diffDias(reserva.data_inicio, reserva.data_fim) === 1 ? 'diária' : 'diárias'}`],
-                  ].map(([l,v]) => (
+                  ].filter(([, v]) => Boolean(v)).map(([l,v]) => (
                     <div key={l} className="flex justify-between px-5 py-3 text-sm">
                       <span className="text-stone-400">{l}</span>
                       <span className="font-medium text-stone-800">{v}</span>

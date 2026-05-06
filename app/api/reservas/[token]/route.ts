@@ -13,10 +13,10 @@ import {
 import { supabaseAdmin } from '@/lib/supabase'
 
 const RESERVA_PUBLIC_SELECT =
-  'id, token, nome, email, telefone, data_inicio, data_fim, valor_total, status'
+  'id, token, nome, email, telefone, cpf, endereco_cliente, data_inicio, data_fim, valor_total, status'
 
 const RESERVA_EDIT_SELECT =
-  'id, token, nome, email, telefone, data_inicio, data_fim, valor_total, status, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes'
+  'id, token, nome, email, telefone, cpf, endereco_cliente, data_inicio, data_fim, valor_total, status, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes'
 
 function formatBlockedDates(dateRange: string[]): string {
   return dateRange.map(formatDisplayDate).join(', ')
@@ -83,6 +83,8 @@ export async function PUT(
       status: nextStatus,
       contrato: normalizeOptionalText(body.contrato, 120),
       contrato_assinado: Boolean(body.contrato_assinado),
+      cpf: normalizeOptionalText(body.cpf, 20),
+      endereco_cliente: normalizeOptionalText(body.endereco_cliente, 240),
       valor_pago,
       saldo,
       pgto_detalhes: normalizeOptionalText(body.pgto_detalhes, 2000),

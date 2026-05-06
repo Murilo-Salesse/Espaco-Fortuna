@@ -19,7 +19,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { gerarChave, gerarToken } from '@/lib/tokens'
 
 const RESERVA_SELECT =
-  'id, token, nome, email, telefone, data_inicio, data_fim, valor_total, status, criado_em, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes'
+  'id, token, nome, email, telefone, cpf, endereco_cliente, data_inicio, data_fim, valor_total, status, criado_em, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes'
 
 function formatBlockedDates(dateRange: string[]): string {
   return dateRange.map(formatDisplayDate).join(', ')
@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
     const nome = normalizeText(body.nome, 120)
     const email = normalizeOptionalText(body.email, 160)
     const telefone = normalizeOptionalText(body.telefone, 40)
+    const cpf = normalizeOptionalText(body.cpf, 20)
+    const endereco = normalizeOptionalText(body.endereco ?? body.endereco_cliente, 240)
     const data_inicio = typeof body.data_inicio === 'string' ? body.data_inicio : ''
     const data_fim = typeof body.data_fim === 'string' ? body.data_fim : ''
     const manualStatus =
@@ -83,6 +85,13 @@ export async function POST(request: NextRequest) {
     if (!nome || !data_inicio || !data_fim) {
       return NextResponse.json(
         { error: 'Nome, data de início e data de fim são obrigatórios.' },
+        { status: 400 }
+      )
+    }
+
+    if (!isAdmin && (!cpf || !endereco)) {
+      return NextResponse.json(
+        { error: 'CPF e endereço são obrigatórios.' },
         { status: 400 }
       )
     }
@@ -131,6 +140,8 @@ export async function POST(request: NextRequest) {
         nome,
         email,
         telefone,
+        cpf,
+        endereco_cliente: endereco,
         data_inicio,
         data_fim,
         valor_total,
@@ -191,6 +202,8 @@ export async function POST(request: NextRequest) {
       `*Total:* R$ ${valor_total.toLocaleString('pt-BR')}`,
       '',
       `*Nome:* ${nome}`,
+      cpf ? `*CPF:* ${cpf}` : null,
+      endereco ? `*Endereço:* ${endereco}` : null,
       email ? `*E-mail:* ${email}` : null,
       telefone ? `*WhatsApp:* ${telefone}` : null,
     ]

@@ -10,6 +10,7 @@ type Tab = 'dashboard' | 'reservas' | 'calendario' | 'fotos' | 'precos' | 'detal
 
 interface Reserva {
   id: string; token: string; nome: string; email: string; telefone: string
+  cpf?: string; endereco_cliente?: string
   data_inicio: string; data_fim: string; valor_total: number
   status: 'pendente' | 'confirmada' | 'cancelada'
   contrato?: string;
@@ -502,7 +503,7 @@ export default function AdminPage() {
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <div className="text-sm font-medium text-stone-800">{r.nome}</div>
-                        <div className="text-xs text-stone-400 mt-0.5">{r.email} · {r.telefone}</div>
+                        <div className="text-xs text-stone-400 mt-0.5">{[r.email, r.telefone, r.cpf].filter(Boolean).join(' · ')}</div>
                       </div>
                       <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-none ${r.status === 'confirmada' ? 'bg-green-100 text-green-700' : r.status === 'pendente' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-400'}`}>{r.status}</span>
                     </div>
@@ -542,7 +543,8 @@ export default function AdminPage() {
                       <tr key={r.id} className={r.status === 'cancelada' ? 'opacity-50' : ''}>
                         <td className="px-6 py-4">
                           <div className="font-medium text-stone-800">{r.nome}</div>
-                          <div className="text-[10px] text-stone-400">{r.email} · {r.telefone}</div>
+                          <div className="text-[10px] text-stone-400">{[r.email, r.telefone, r.cpf].filter(Boolean).join(' · ')}</div>
+                          {r.endereco_cliente && <div className="text-[10px] text-stone-400 mt-0.5">{r.endereco_cliente}</div>}
                         </td>
                         <td className="px-4 py-4 text-xs text-stone-500">
                           {r.contrato ? (
@@ -992,6 +994,16 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs text-stone-400 mb-1.5">Endereço completo</label>
+                <input
+                  type="text"
+                  value={editModal.endereco_cliente ?? ''}
+                  onChange={e => setEditModal(p => p ? { ...p, endereco_cliente: e.target.value } : null)}
+                  className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-stone-400 mb-1.5">Data Início *</label>
@@ -1141,6 +1153,27 @@ export default function AdminPage() {
                     type="tel"
                     value={novaReserva.telefone ?? ''}
                     onChange={e => setNovaReserva(p => ({ ...p, telefone: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">CPF</label>
+                  <input
+                    type="text"
+                    value={novaReserva.cpf ?? ''}
+                    onChange={e => setNovaReserva(p => ({ ...p, cpf: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Endereço completo</label>
+                  <input
+                    type="text"
+                    value={novaReserva.endereco_cliente ?? ''}
+                    onChange={e => setNovaReserva(p => ({ ...p, endereco_cliente: e.target.value }))}
                     className="w-full px-3 py-2 text-sm border border-stone-200 rounded-xl focus:outline-none focus:border-green-500"
                   />
                 </div>
