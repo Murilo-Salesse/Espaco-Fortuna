@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { MAX_FOTOS } from '@/lib/fotos'
 import { getPrecoConfig, getPrecoTipo, type Preco } from '@/lib/precos'
@@ -51,7 +52,7 @@ const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 function tipoDia(date: Date, precos: Preco[]): Preco {
-  const tipo = getPrecoTipo(date.getMonth(), date.getDay(), date.getDate())
+  const tipo = getPrecoTipo(date.getMonth(), date.getDay(), date.getDate(), date.getFullYear())
   const config = getPrecoConfig(tipo)
   return precos.find(p => p.tipo === tipo) ?? { tipo, label: config?.label ?? tipo, valor: config?.fallback ?? 0 }
 }
@@ -296,12 +297,12 @@ export default function HomePage() {
     <div className="font-sans text-stone-800 min-h-screen bg-stone-100">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-stone-200">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <Image src="/logo-fortuna.jpg" alt="Espaco Fortuna" width={40} height={40} className="h-9 w-9 rounded-md object-cover" priority />
             <span className="font-serif text-lg tracking-tight">
               {config?.nome ?? 'Fortuna'}<span className="text-green-500">.</span>
             </span>
-          </a>
+          </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-stone-500">
             <a href="#sobre"      className="hover:text-stone-800 transition-colors">O espaço</a>
             <a href="#calendario" className="hover:text-stone-800 transition-colors">Disponibilidade</a>

@@ -16,7 +16,7 @@ const RESERVA_PUBLIC_SELECT =
   'id, token, nome, email, telefone, cpf, endereco_cliente, data_inicio, data_fim, valor_total, status'
 
 const RESERVA_EDIT_SELECT =
-  'id, token, nome, email, telefone, cpf, endereco_cliente, data_inicio, data_fim, valor_total, status, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes'
+  'id, token, nome, email, telefone, cpf, endereco_cliente, data_inicio, data_fim, valor_total, status, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes, feriados_reserva'
 
 function formatBlockedDates(dateRange: string[]): string {
   return dateRange.map(formatDisplayDate).join(', ')
@@ -71,13 +71,33 @@ export async function PUT(
     const nextStatus = isReservaStatus(body.status) ? body.status : currentReserva.status
     const valorPagoInformado =
       body.valor_pago === undefined ? null : normalizeCurrencyValue(body.valor_pago)
+    const valorTotalInformado =
+      body.valor_total === undefined ? null : normalizeCurrencyValue(body.valor_total)
 
     if (body.valor_pago !== undefined && valorPagoInformado === null) {
       return NextResponse.json({ error: 'Valor pago inválido.' }, { status: 400 })
     }
 
+    if (body.valor_total !== undefined && valorTotalInformado === null) {
+      return NextResponse.json({ error: 'Valor total inválido.' }, { status: 400 })
+    }
+
+    const valor_total = valorTotalInformado ?? Number(currentReserva.valor_total)
     const valor_pago = valorPagoInformado ?? Number(currentReserva.valor_pago ?? 0)
-    const saldo = Math.max(0, Number(currentReserva.valor_total) - valor_pago)
+    const saldo = Math.max(0, valor_total - valor_pago)
+
+    const dateRange = getDateRange(currentReserva.data_inicio, currentReserva.data_fim)
+    if (!dateRange) {
+      return NextResponse.json({ error: 'Período da reserva inválido.' }, { status: 400 })
+    }
+
+    const feriados_reserva: string[] = Array.isArray(body.feriados_reserva)
+      ? body.feriados_reserva.filter((date: unknown): date is string => typeof date === 'string')
+      : []
+
+    if (feriados_reserva.some((date) => !dateRange.includes(date))) {
+      return NextResponse.json({ error: 'Feriados da reserva inválidos.' }, { status: 400 })
+    }
 
     const updatePayload = {
       status: nextStatus,
@@ -85,14 +105,11 @@ export async function PUT(
       contrato_assinado: Boolean(body.contrato_assinado),
       cpf: normalizeOptionalText(body.cpf, 20),
       endereco_cliente: normalizeOptionalText(body.endereco_cliente, 240),
+      feriados_reserva,
+      valor_total,
       valor_pago,
       saldo,
       pgto_detalhes: normalizeOptionalText(body.pgto_detalhes, 2000),
-    }
-
-    const dateRange = getDateRange(currentReserva.data_inicio, currentReserva.data_fim)
-    if (!dateRange) {
-      return NextResponse.json({ error: 'Período da reserva inválido.' }, { status: 400 })
     }
 
     if (currentReserva.status !== 'confirmada' && nextStatus === 'confirmada') {

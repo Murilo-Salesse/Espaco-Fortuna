@@ -19,7 +19,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { gerarChave, gerarToken } from '@/lib/tokens'
 
 const RESERVA_SELECT =
-  'id, token, nome, email, telefone, cpf, endereco_cliente, data_inicio, data_fim, valor_total, status, criado_em, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes'
+  'id, token, nome, email, telefone, cpf, endereco_cliente, data_inicio, data_fim, valor_total, status, criado_em, contrato, contrato_assinado, valor_pago, saldo, pgto_detalhes, feriados_reserva'
 
 function formatBlockedDates(dateRange: string[]): string {
   return dateRange.map(formatDisplayDate).join(', ')
@@ -80,7 +80,17 @@ export async function POST(request: NextRequest) {
       isAdmin && isReservaStatus(body.status) ? body.status : 'pendente'
     const contrato = isAdmin ? normalizeOptionalText(body.contrato, 120) : null
     const valor_pago = isAdmin ? normalizeCurrencyValue(body.valor_pago) ?? 0 : 0
+    const valor_total_manual = isAdmin && body.valor_total !== undefined
+      ? normalizeCurrencyValue(body.valor_total)
+      : null
     const pgto_detalhes = isAdmin ? normalizeOptionalText(body.pgto_detalhes, 2000) : null
+    const feriados_reserva: string[] = isAdmin && Array.isArray(body.feriados_reserva)
+      ? body.feriados_reserva.filter((date: unknown): date is string => typeof date === 'string')
+      : []
+
+    if (isAdmin && body.valor_total !== undefined && valor_total_manual === null) {
+      return NextResponse.json({ error: 'Valor total inválido.' }, { status: 400 })
+    }
 
     if (!nome || !data_inicio || !data_fim) {
       return NextResponse.json(
@@ -101,6 +111,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Período da reserva inválido.' }, { status: 400 })
     }
 
+    if (feriados_reserva.some((date) => !dateRange.includes(date))) {
+      return NextResponse.json({ error: 'Feriados da reserva inválidos.' }, { status: 400 })
+    }
+
     if (dateRange.length > MAX_RESERVA_DAYS) {
       return NextResponse.json(
         { error: `O período máximo permitido é de ${MAX_RESERVA_DAYS} dias.` },
@@ -116,7 +130,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const valor_total = await calculateReservationTotal(dateRange)
+    const valor_total = valor_total_manual ?? await calculateReservationTotal(dateRange)
 
     let token = gerarToken()
     const chave = gerarChave()
@@ -150,6 +164,7 @@ export async function POST(request: NextRequest) {
         valor_pago,
         saldo: Math.max(0, valor_total - valor_pago),
         pgto_detalhes,
+        feriados_reserva,
       })
       .select(RESERVA_SELECT)
       .single()
@@ -185,9 +200,6 @@ export async function POST(request: NextRequest) {
       .from('configuracao')
       .select('whatsapp_admin, nome')
       .single()
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://espacofortuna.com.br'
-    const linkConfirmar = `${baseUrl}/confirmar/${token}`
 
     const periodo =
       data_inicio === data_fim

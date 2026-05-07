@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MAX_FOTOS } from '@/lib/fotos';
-import { getPrecoConfig, type Preco } from '@/lib/precos';
+import { getPrecoConfig, getPrecoTipo, isFeriadoBR, type Preco, type PrecoTipo } from '@/lib/precos';
 
 type Tab = 'dashboard' | 'reservas' | 'calendario' | 'fotos' | 'precos' | 'detalhes'
 
@@ -18,6 +18,7 @@ interface Reserva {
   valor_pago?: number;
   saldo?: number;
   pgto_detalhes?: string;
+  feriados_reserva?: string[];
 }
 interface Configuracao {
   nome: string; descricao: string; localizacao: string
@@ -29,16 +30,38 @@ interface DiaInfo { data: string; motivo: string }
 
 const MESES       = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
-const FERIADOS_BR = ['01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25']
 const RESERVA_STATUS_OPTIONS: Reserva['status'][] = ['pendente', 'confirmada', 'cancelada']
 const NOVA_RESERVA_STATUS_OPTIONS: Array<Extract<Reserva['status'], 'pendente' | 'confirmada'>> = ['pendente', 'confirmada']
 
 function isFeriado(d: Date) {
-  const mesdia = `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-  return FERIADOS_BR.includes(mesdia)
+  return isFeriadoBR(d.getFullYear(), d.getMonth(), d.getDate())
 }
 function fmt(iso: string) {
   const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`
+}
+
+function isoParaDataLocal(iso: string) {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function dataParaIso(date: Date) {
+  return date.toISOString().split('T')[0]
+}
+
+function diasDaReserva(inicio?: string, fim?: string) {
+  if (!inicio || !fim) return []
+  const start = isoParaDataLocal(inicio)
+  const end = isoParaDataLocal(fim)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return []
+
+  const dias: string[] = []
+  const cursor = new Date(start)
+  while (cursor <= end) {
+    dias.push(dataParaIso(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return dias
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -73,7 +96,9 @@ export default function AdminPage() {
 
   const [confirmModal, setConfirmModal] = useState<Reserva | null>(null)
   const [editModal, setEditModal]       = useState<Reserva | null>(null)
+  const [editFeriados, setEditFeriados] = useState<Set<string>>(new Set())
   const [filtroStatus, setFiltroStatus] = useState<string>('todas')
+  const [filtroData, setFiltroData]     = useState('')
   const [comodModal, setComodModal]     = useState(false)
   const [novoModal, setNovoModal]       = useState(false)
   const [novaReserva, setNovaReserva]   = useState<Partial<Reserva>>({ status: 'pendente', valor_pago: 0 })
@@ -247,6 +272,58 @@ export default function AdminPage() {
     return base + ' text-stone-700'
   }
 
+  function precoDoTipo(tipo: PrecoTipo) {
+    const config = getPrecoConfig(tipo)
+    return precos.find(p => p.tipo === tipo)?.valor ?? config?.fallback ?? 0
+  }
+
+  function tipoAutomaticoDia(iso: string) {
+    const date = isoParaDataLocal(iso)
+    return getPrecoTipo(date.getMonth(), date.getDay(), date.getDate(), date.getFullYear())
+  }
+
+  function calcularTotalComFeriados(dias: string[], feriados: Set<string>) {
+    return dias.reduce((total, iso) => {
+      const tipo = feriados.has(iso) ? 'feriado' : tipoAutomaticoDia(iso)
+      return total + precoDoTipo(tipo)
+    }, 0)
+  }
+
+  function abrirEdicao(reserva: Reserva) {
+    const dias = diasDaReserva(reserva.data_inicio, reserva.data_fim)
+    const feriados = reserva.feriados_reserva?.length
+      ? reserva.feriados_reserva
+      : dias.filter(iso => {
+          const date = isoParaDataLocal(iso)
+          return isFeriado(date)
+        })
+
+    setEditFeriados(new Set(feriados))
+    setEditModal(reserva)
+  }
+
+  function atualizarFeriadosEdicao(nextFeriados: Set<string>) {
+    if (!editModal) return
+    const dias = diasDaReserva(editModal.data_inicio, editModal.data_fim)
+    const valor_total = calcularTotalComFeriados(dias, nextFeriados)
+    const valor_pago = Number(editModal.valor_pago ?? 0)
+
+    setEditFeriados(nextFeriados)
+    setEditModal({
+      ...editModal,
+      feriados_reserva: [...nextFeriados],
+      valor_total,
+      saldo: Math.max(0, valor_total - valor_pago),
+    })
+  }
+
+  function toggleFeriadoEdicao(iso: string) {
+    const next = new Set(editFeriados)
+    if (next.has(iso)) next.delete(iso)
+    else next.add(iso)
+    atualizarFeriadosEdicao(next)
+  }
+
   async function confirmarReserva(reserva: Reserva) {
     try {
       const res = await fetch(`/api/reservas/${reserva.token}/confirmar`, {
@@ -343,6 +420,11 @@ export default function AdminPage() {
   const diasReservados = datasInfo.filter(d => d.motivo === 'reserva_confirmada').length
   const diasBloqueados = datasInfo.filter(d => d.motivo === 'bloqueado_admin').length
   const diasCalMes     = getDiasCalMes()
+  const reservasFiltradas = reservas.filter(r => {
+    const statusOk = filtroStatus === 'todas' || r.status === filtroStatus
+    const dataOk = !filtroData || (r.data_inicio <= filtroData && r.data_fim >= filtroData)
+    return statusOk && dataOk
+  })
 
   if (!session) return (
     <div className="min-h-screen flex items-center justify-center bg-stone-50">
@@ -479,16 +561,34 @@ export default function AdminPage() {
                   <h1 className="text-xl md:text-2xl font-serif text-stone-900">Reservas</h1>
                   <p className="text-stone-400 text-sm mt-1">Gerencie todas as reservas.</p>
                 </div>
-                <div className="flex bg-stone-100 p-1 rounded-xl self-start">
-                  {['todas', 'pendente', 'confirmada', 'cancelada'].map(s => (
-                    <button
-                      key={s}
-                      onClick={() => setFiltroStatus(s)}
-                      className={`text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-lg transition-all ${filtroStatus === s ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
-                    >
-                      {s === 'todas' ? 'Todas' : s === 'confirmada' ? 'Pagas/Conf.' : s}
-                    </button>
-                  ))}
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <div className="flex bg-stone-100 p-1 rounded-xl self-start">
+                    {['todas', 'pendente', 'confirmada', 'cancelada'].map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setFiltroStatus(s)}
+                        className={`text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-lg transition-all ${filtroStatus === s ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+                      >
+                        {s === 'todas' ? 'Todas' : s === 'confirmada' ? 'Pagas/Conf.' : s}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={filtroData}
+                      onChange={e => setFiltroData(e.target.value)}
+                      className="h-9 px-3 text-xs border border-stone-200 rounded-xl bg-white text-stone-600 focus:outline-none focus:border-green-500"
+                    />
+                    {filtroData && (
+                      <button
+                        onClick={() => setFiltroData('')}
+                        className="h-9 px-3 text-[10px] uppercase tracking-wider font-bold text-stone-400 hover:text-stone-700"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => setNovoModal(true)}
@@ -498,7 +598,7 @@ export default function AdminPage() {
                 </button>
               </div>
               <div className="flex flex-col gap-3 md:hidden">
-                {reservas.map(r => (
+                {reservasFiltradas.map(r => (
                   <div key={r.id} className={`bg-white border rounded-2xl p-4 ${r.status === 'pendente' ? 'border-amber-200' : 'border-stone-200'}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -523,6 +623,7 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+                {reservasFiltradas.length === 0 && <p className="px-6 py-8 text-center text-sm text-stone-400">Nenhuma reserva encontrada com este filtro.</p>}
               </div>
               <div className="hidden md:block bg-white border border-stone-200 rounded-2xl overflow-hidden">
                 <table className="w-full text-sm">
@@ -539,9 +640,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
-                    {reservas
-                      .filter(r => filtroStatus === 'todas' || r.status === filtroStatus)
-                      .map(r => (
+                    {reservasFiltradas.map(r => (
                       <tr key={r.id} className={r.status === 'cancelada' ? 'opacity-50' : ''}>
                         <td className="px-6 py-4">
                           <div className="font-medium text-stone-800">{r.nome}</div>
@@ -565,7 +664,7 @@ export default function AdminPage() {
                         <td className="px-4 py-4"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${r.status === 'confirmada' ? 'bg-green-100 text-green-700' : r.status === 'pendente' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-400'}`}>{r.status}</span></td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center gap-2 justify-end">
-                            <button onClick={() => setEditModal(r)} className="p-2 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-all" title="Editar"><IconEdit /></button>
+                            <button onClick={() => abrirEdicao(r)} className="p-2 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-all" title="Editar"><IconEdit /></button>
                             {r.status === 'pendente' && <button onClick={() => setConfirmModal(r)} className="text-xs border border-green-300 text-green-700 px-3 py-1.5 rounded-full hover:bg-green-50 transition-colors">Confirmar</button>}
                             {r.status !== 'cancelada' && <button onClick={() => cancelarReserva(r.token)} className="text-xs text-stone-400 hover:text-red-500 transition-colors">Cancelar</button>}
                             <button onClick={() => deletarReserva(r.token)} className="p-2 text-stone-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Excluir Permanentemente"><IconTrash /></button>
@@ -575,7 +674,7 @@ export default function AdminPage() {
                     ))}
                   </tbody>
                 </table>
-                {reservas.filter(r => filtroStatus === 'todas' || r.status === filtroStatus).length === 0 && <p className="px-6 py-8 text-center text-sm text-stone-400">Nenhuma reserva encontrada com este filtro.</p>}
+                {reservasFiltradas.length === 0 && <p className="px-6 py-8 text-center text-sm text-stone-400">Nenhuma reserva encontrada com este filtro.</p>}
               </div>
             </div>
           )}
@@ -1039,6 +1138,40 @@ export default function AdminPage() {
                   />
                 </div>
               </div>
+
+              {diasDaReserva(editModal.data_inicio, editModal.data_fim).length > 0 && (
+                <div>
+                  <label className="block text-xs text-stone-400 mb-1.5">Dias da reserva</label>
+                  <div className="rounded-xl border border-stone-200 divide-y divide-stone-100 overflow-hidden">
+                    {diasDaReserva(editModal.data_inicio, editModal.data_fim).map(iso => {
+                      const marcado = editFeriados.has(iso)
+                      const tipo = marcado ? 'feriado' : tipoAutomaticoDia(iso)
+                      const preco = precoDoTipo(tipo)
+
+                      return (
+                        <label key={iso} className="flex items-center justify-between gap-3 px-3 py-2 text-xs cursor-pointer hover:bg-stone-50">
+                          <div>
+                            <div className="font-medium text-stone-700">{fmt(iso)}</div>
+                            <div className="text-[10px] text-stone-400">{getPrecoConfig(tipo)?.label}</div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-stone-500">R$ {Number(preco).toLocaleString('pt-BR')}</span>
+                            <span className="flex items-center gap-1.5 text-stone-500">
+                              <input
+                                type="checkbox"
+                                checked={marcado}
+                                onChange={() => toggleFeriadoEdicao(iso)}
+                                className="w-4 h-4 rounded text-green-500 focus:ring-green-500 border-stone-300"
+                              />
+                              Feriado
+                            </span>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
