@@ -98,7 +98,8 @@ export default function AdminPage() {
   const [editModal, setEditModal]       = useState<Reserva | null>(null)
   const [editFeriados, setEditFeriados] = useState<Set<string>>(new Set())
   const [filtroStatus, setFiltroStatus] = useState<string>('todas')
-  const [filtroData, setFiltroData]     = useState('')
+  const [filtroDataInicio, setFiltroDataInicio] = useState('')
+  const [filtroDataFim, setFiltroDataFim]       = useState('')
   const [comodModal, setComodModal]     = useState(false)
   const [novoModal, setNovoModal]       = useState(false)
   const [novaReserva, setNovaReserva]   = useState<Partial<Reserva>>({ status: 'pendente', valor_pago: 0 })
@@ -420,9 +421,14 @@ export default function AdminPage() {
   const diasReservados = datasInfo.filter(d => d.motivo === 'reserva_confirmada').length
   const diasBloqueados = datasInfo.filter(d => d.motivo === 'bloqueado_admin').length
   const diasCalMes     = getDiasCalMes()
+  const temFiltroData  = Boolean(filtroDataInicio || filtroDataFim)
   const reservasFiltradas = reservas.filter(r => {
     const statusOk = filtroStatus === 'todas' || r.status === filtroStatus
-    const dataOk = !filtroData || (r.data_inicio <= filtroData && r.data_fim >= filtroData)
+    const dataA = filtroDataInicio || filtroDataFim
+    const dataB = filtroDataFim || filtroDataInicio
+    const inicioFiltro = dataA <= dataB ? dataA : dataB
+    const fimFiltro = dataA <= dataB ? dataB : dataA
+    const dataOk = !temFiltroData || (r.data_inicio <= fimFiltro && r.data_fim >= inicioFiltro)
     return statusOk && dataOk
   })
 
@@ -573,17 +579,36 @@ export default function AdminPage() {
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="date"
-                      value={filtroData}
-                      onChange={e => setFiltroData(e.target.value)}
-                      className="h-9 px-3 text-xs border border-stone-200 rounded-xl bg-white text-stone-600 focus:outline-none focus:border-green-500"
-                    />
-                    {filtroData && (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
+                      <IconCal />
+                      <label className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-stone-400">
+                        De
+                        <input
+                          type="date"
+                          value={filtroDataInicio}
+                          onChange={e => setFiltroDataInicio(e.target.value)}
+                          className="w-[132px] text-xs font-medium normal-case tracking-normal text-stone-700 bg-transparent focus:outline-none"
+                        />
+                      </label>
+                      <span className="h-5 w-px bg-stone-200" />
+                      <label className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-stone-400">
+                        Até
+                        <input
+                          type="date"
+                          value={filtroDataFim}
+                          onChange={e => setFiltroDataFim(e.target.value)}
+                          className="w-[132px] text-xs font-medium normal-case tracking-normal text-stone-700 bg-transparent focus:outline-none"
+                        />
+                      </label>
+                    </div>
+                    {temFiltroData && (
                       <button
-                        onClick={() => setFiltroData('')}
-                        className="h-9 px-3 text-[10px] uppercase tracking-wider font-bold text-stone-400 hover:text-stone-700"
+                        onClick={() => {
+                          setFiltroDataInicio('')
+                          setFiltroDataFim('')
+                        }}
+                        className="h-10 px-3 text-[10px] uppercase tracking-wider font-bold text-stone-400 hover:text-stone-700"
                       >
                         Limpar
                       </button>
